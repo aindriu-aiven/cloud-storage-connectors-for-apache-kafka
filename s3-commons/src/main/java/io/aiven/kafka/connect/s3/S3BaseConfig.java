@@ -130,6 +130,11 @@ public class S3BaseConfig extends AbstractConfig {
         super(definition, handleDeprecatedYyyyUppercase(originals));
     }
 
+    public static Map<String, String> preprocessProperties(final Map<String, String> properties) {
+        // Add other preprocessings when needed here. Mind the order.
+        return handleDeprecatedYyyyUppercase(properties);
+    }
+
     private static Map<String, String> handleDeprecatedYyyyUppercase(final Map<String, String> properties) {
         if (!properties.containsKey(AWS_S3_PREFIX_CONFIG)) {
             return properties;

@@ -30,10 +30,12 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.storage.Converter;
 
-import io.aiven.kafka.connect.s3.source.config.S3ClientFactory;
 import io.aiven.kafka.connect.s3.source.config.S3SourceConfig;
 import io.aiven.kafka.connect.s3.source.output.Transformer;
 import io.aiven.kafka.connect.s3.source.output.TransformerFactory;
+
+
+import io.aiven.kafka.connect.s3.S3Utility;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -73,7 +75,6 @@ public class S3SourceTask extends SourceTask {
     private boolean taskInitialized;
 
     private final AtomicBoolean connectorStopped = new AtomicBoolean();
-    private final S3ClientFactory s3ClientFactory = new S3ClientFactory();
 
     private final Object pollLock = new Object();
     private final Set<String> failedObjectKeys = new HashSet<>();
@@ -134,7 +135,8 @@ public class S3SourceTask extends SourceTask {
     }
 
     private void initializeS3Client() {
-        this.s3Client = s3ClientFactory.createAmazonS3Client(s3SourceConfig);
+        S3Utility s3Utility = new S3Utility();
+        this.s3Client = s3Utility.createAmazonS3Client(s3SourceConfig);
         LOGGER.debug("S3 client initialized");
     }
 
