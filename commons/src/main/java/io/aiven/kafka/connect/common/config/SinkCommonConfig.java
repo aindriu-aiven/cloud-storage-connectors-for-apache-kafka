@@ -40,6 +40,7 @@ public abstract class SinkCommonConfig extends CommonConfig {
      * OutputFormatFragment to handle Output format base configuration queries.
      */
     protected final OutputFormatFragment outputFormatFragment;
+
     @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     public SinkCommonConfig(ConfigDef definition, Map<?, ?> originals) { // NOPMD
         super(definition, originals);

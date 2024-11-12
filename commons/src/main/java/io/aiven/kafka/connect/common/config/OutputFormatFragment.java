@@ -42,8 +42,11 @@ public class OutputFormatFragment extends ConfigFragment {
 
     /**
      * Defines the parameters for the OutputFormatFragment.
-     * @param configDef the configuration definition to update.
-     * @param defaultFieldType the default FieldType.  May be {@code null}.
+     *
+     * @param configDef
+     *            the configuration definition to update.
+     * @param defaultFieldType
+     *            the default FieldType. May be {@code null}.
      * @return The update ConfigDef.
      */
     public static ConfigDef update(final ConfigDef configDef, final OutputFieldType defaultFieldType) {
@@ -106,6 +109,7 @@ public class OutputFormatFragment extends ConfigFragment {
 
     /**
      * Returns a list of OutputField objects as specified by {@code FORMAT_OUTPUT_FIELDS_CONFIG}.
+     *
      * @return a list of OutputField objects as specified by {@code FORMAT_OUTPUT_FIELDS_CONFIG}.
      */
     public List<OutputField> getOutputFields() {
@@ -114,16 +118,19 @@ public class OutputFormatFragment extends ConfigFragment {
 
     /**
      * Returns {@code true} if {@link #FORMAT_OUTPUT_FIELDS_CONFIG} is set.
-     * @return  {@code true} if {@link #FORMAT_OUTPUT_FIELDS_CONFIG} is set.
+     *
+     * @return {@code true} if {@link #FORMAT_OUTPUT_FIELDS_CONFIG} is set.
      */
     public boolean hasOutputFields() {
         return has(FORMAT_OUTPUT_FIELDS_CONFIG);
     }
 
     /**
-     * Returns a list of OutputField objects as specified by the {@code configEntry} param.
-     * May throw a ConfigException if the configEntry is not present in the configuraiton.
-     * @param configEntry the configuration property that specifies the output field formats.
+     * Returns a list of OutputField objects as specified by the {@code configEntry} param. May throw a ConfigException
+     * if the configEntry is not present in the configuraiton.
+     *
+     * @param configEntry
+     *            the configuration property that specifies the output field formats.
      * @return a list of OutputField objects as specified by {@code configEntry}.
      */
     public List<OutputField> getOutputFields(final String configEntry) {

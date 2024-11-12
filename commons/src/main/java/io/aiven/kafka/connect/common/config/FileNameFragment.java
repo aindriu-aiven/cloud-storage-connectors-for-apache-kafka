@@ -126,8 +126,9 @@ public final class FileNameFragment extends ConfigFragment {
     }
 
     /**
-     * Returns the text of the filename template.
-     * May throw {@link ConfigException} if the property {@link #FILE_NAME_TEMPLATE_CONFIG} is not set.
+     * Returns the text of the filename template. May throw {@link ConfigException} if the property
+     * {@link #FILE_NAME_TEMPLATE_CONFIG} is not set.
+     *
      * @return the text of the filename template.
      */
     public String getFilename() {
@@ -142,6 +143,17 @@ public final class FileNameFragment extends ConfigFragment {
 
     public Template getFilenameTemplate() {
         return Template.of(getFilename());
+    }
+
+    private String resolveFilenameTemplate() {
+        String fileNameTemplate = cfg.getString(FILE_NAME_TEMPLATE_CONFIG);
+        if (fileNameTemplate == null) {
+            final CompressionType compressionType = new CompressionFragment(cfg).getCompressionType();
+            fileNameTemplate = FormatType.AVRO.equals(new OutputFormatFragment(cfg).getFormatType())
+                    ? DEFAULT_FILENAME_TEMPLATE + ".avro" + compressionType.extension()
+                    : DEFAULT_FILENAME_TEMPLATE + compressionType.extension();
+        }
+        return fileNameTemplate;
     }
 
     public ZoneId getFilenameTimezone() {

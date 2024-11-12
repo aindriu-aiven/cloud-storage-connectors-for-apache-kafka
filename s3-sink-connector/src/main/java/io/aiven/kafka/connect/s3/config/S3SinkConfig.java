@@ -43,18 +43,17 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import io.aiven.kafka.connect.common.config.CompressionType;
-import io.aiven.kafka.connect.common.config.FileNameFragment;
-import io.aiven.kafka.connect.common.config.OutputField;
-import io.aiven.kafka.connect.common.config.OutputFieldEncodingType;
-import io.aiven.kafka.connect.common.config.OutputFieldType;
-import io.aiven.kafka.connect.common.config.OutputFormatFragment;
-import io.aiven.kafka.connect.common.config.TimestampSource;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
 
+import io.aiven.kafka.connect.common.config.CompressionType;
+import io.aiven.kafka.connect.common.config.FileNameFragment;
+import io.aiven.kafka.connect.common.config.OutputField;
+import io.aiven.kafka.connect.common.config.OutputFieldEncodingType;
+import io.aiven.kafka.connect.common.config.OutputFieldType;
+import io.aiven.kafka.connect.common.config.TimestampSource;
 import io.aiven.kafka.connect.common.config.validators.TimeZoneValidator;
 import io.aiven.kafka.connect.common.config.validators.TimestampSourceValidator;
 import io.aiven.kafka.connect.common.templating.Template;

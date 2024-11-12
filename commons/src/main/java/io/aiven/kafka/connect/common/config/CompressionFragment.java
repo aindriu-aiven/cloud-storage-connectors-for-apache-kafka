@@ -28,7 +28,6 @@ public class CompressionFragment extends ConfigFragment {
     static final String GROUP_COMPRESSION = "File Compression";
     static final String FILE_COMPRESSION_TYPE_CONFIG = "file.compression.type";
 
-
     public CompressionFragment(final AbstractConfig cfg) {
         super(cfg);
     }
@@ -46,9 +45,12 @@ public class CompressionFragment extends ConfigFragment {
 
     /**
      * Retrieves the defiend compression type.
+     *
      * @return the defined compression type or {@link CompressionType#NONE} if there is no defined compression type.
      */
     public CompressionType getCompressionType() {
-        return has(FILE_COMPRESSION_TYPE_CONFIG) ? CompressionType.forName(cfg.getString(FILE_COMPRESSION_TYPE_CONFIG)) : CompressionType.NONE;
+        return has(FILE_COMPRESSION_TYPE_CONFIG)
+                ? CompressionType.forName(cfg.getString(FILE_COMPRESSION_TYPE_CONFIG))
+                : CompressionType.NONE;
     }
 }
