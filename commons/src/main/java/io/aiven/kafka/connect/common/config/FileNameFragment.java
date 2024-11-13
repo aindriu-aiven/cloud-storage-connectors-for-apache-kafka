@@ -50,6 +50,13 @@ public final class FileNameFragment extends ConfigFragment {
         super(cfg);
     }
 
+    /**
+     * Adds the FileName properties to the configuration definition.
+     *
+     * @param configDef
+     *            the configuration definition to update.
+     * @return the updated configuration definition.
+     */
     public static ConfigDef update(final ConfigDef configDef) {
         int fileGroupCounter = 0;
 
@@ -135,36 +142,45 @@ public final class FileNameFragment extends ConfigFragment {
         if (has(FILE_NAME_TEMPLATE_CONFIG)) {
             return cfg.getString(FILE_NAME_TEMPLATE_CONFIG);
         }
-        CompressionType compressionType = new CompressionFragment(cfg).getCompressionType();
+        final CompressionType compressionType = new CompressionFragment(cfg).getCompressionType();
         return FormatType.AVRO.equals(new OutputFormatFragment(cfg).getFormatType())
                 ? DEFAULT_FILENAME_TEMPLATE + ".avro" + compressionType.extension()
                 : DEFAULT_FILENAME_TEMPLATE + compressionType.extension();
     }
 
+    /**
+     * Gets the filename template.
+     *
+     * @return the Filename template.
+     */
     public Template getFilenameTemplate() {
         return Template.of(getFilename());
     }
 
-    private String resolveFilenameTemplate() {
-        String fileNameTemplate = cfg.getString(FILE_NAME_TEMPLATE_CONFIG);
-        if (fileNameTemplate == null) {
-            final CompressionType compressionType = new CompressionFragment(cfg).getCompressionType();
-            fileNameTemplate = FormatType.AVRO.equals(new OutputFormatFragment(cfg).getFormatType())
-                    ? DEFAULT_FILENAME_TEMPLATE + ".avro" + compressionType.extension()
-                    : DEFAULT_FILENAME_TEMPLATE + compressionType.extension();
-        }
-        return fileNameTemplate;
-    }
-
+    /**
+     * Gets the filename timezone
+     *
+     * @return The timezone specified for filenames.
+     */
     public ZoneId getFilenameTimezone() {
         return ZoneId.of(cfg.getString(FILE_NAME_TIMESTAMP_TIMEZONE));
     }
 
+    /**
+     * Gets the timestamp source for the file name.
+     *
+     * @return the timestamp source for the file name.
+     */
     public TimestampSource getFilenameTimestampSource() {
         return TimestampSource.of(getFilenameTimezone(),
                 TimestampSource.Type.of(cfg.getString(FILE_NAME_TIMESTAMP_SOURCE)));
     }
 
+    /**
+     * Gets the maximum number of records allowed in a file.
+     *
+     * @return the maximum number of records allowed in a file.
+     */
     public int getMaxRecordsPerFile() {
         return cfg.getInt(FILE_MAX_RECORDS);
     }

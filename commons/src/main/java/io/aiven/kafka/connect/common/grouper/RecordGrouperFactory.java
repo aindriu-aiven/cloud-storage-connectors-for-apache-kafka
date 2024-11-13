@@ -120,19 +120,31 @@ public final class RecordGrouperFactory {
             .map(v -> v.stream().map(Pair::getLeft).collect(Collectors.joining(",")))
             .collect(Collectors.joining("; "));
 
+    /** A list of sets of variables that are defined together as valid groupers */
+    private static final List<String> SUPPORTED_VARIABLE_SETS;
+
+    static {
+        SUPPORTED_VARIABLE_SETS = new ArrayList<>();
+        for (final List<Pair<String, Boolean>> lst : SUPPORTED_VARIABLES.values()) {
+            SUPPORTED_VARIABLE_SETS.add("[" + lst.stream()
+                    .map(pair -> pair.getLeft() + " " + (pair.getRight() ? "(required)" : "(not allowed)"))
+                    .collect(Collectors.joining(", ")) + "]");
+        }
+    }
+
     private RecordGrouperFactory() {
     }
 
-    private static List<String> supportedVariableSets() {
-        List<String> result = new ArrayList<>();
-        for (List<Pair<String, Boolean>> lst : SUPPORTED_VARIABLES.values()) {
-            result.add("[" + lst.stream()
-                    .map(pair -> pair.getLeft() + " " + (pair.getRight() ? "required" : "not allowed"))
-                    .collect(Collectors.joining(", ")) + "]");
-        }
-        return result;
-    }
-
+    /**
+     * Returns the class name for the RecordGrouperType.
+     *
+     * @param template
+     *            the template to parse for the types.
+     * @return The class name for the RecordGrouperType.
+     * @throws IllegalArgumentException
+     *             if there are no variables in the template or if the variables do not match a registered RecordGrouper
+     *             implementation.
+     */
     public static String resolveRecordGrouperType(final Template template) {
         if (template.variablesSet().isEmpty()) {
             throw new IllegalArgumentException(String.format(
@@ -148,9 +160,8 @@ public final class RecordGrouperFactory {
         } else if (isByKeyTopicPartitionRecord(template.variablesSet())) {
             return KEY_TOPIC_PARTITION_RECORD;
         } else {
-            throw new IllegalArgumentException(
-                    String.format("unsupported set of template variables[%s], supported sets are: %s",
-                            String.join(", ", template.variablesSet()), String.join(",", supportedVariableSets())));
+            throw new IllegalArgumentException(String
+                    .format("unsupported set of template variables, supported sets are: %s", SUPPORTED_VARIABLES_LIST));
         }
     }
 

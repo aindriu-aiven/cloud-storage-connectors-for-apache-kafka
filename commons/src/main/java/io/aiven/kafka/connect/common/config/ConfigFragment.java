@@ -21,7 +21,7 @@ import org.apache.kafka.common.config.AbstractConfig;
 /**
  * Base for all configuration fragments.
  */
-abstract class ConfigFragment {
+class ConfigFragment {
     /** The configuration that this fragment is associated with */
     protected final AbstractConfig cfg;
 
@@ -49,7 +49,7 @@ abstract class ConfigFragment {
      *            The key to check.
      * @return {@code true} if the key was set, {@code false} if the key was not set or does not exist in the config.
      */
-    public final boolean has(String key) {
+    public final boolean has(final String key) {
         return cfg.values().get(key) != null;
     }
 }

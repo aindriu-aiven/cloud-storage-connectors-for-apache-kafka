@@ -52,24 +52,24 @@ public class FileNameFragmentTest {// NOPMD
                                         FileNameFragment.FILE_NAME_TIMESTAMP_SOURCE), FILE_NAME_TEMPLATE_CONFIG(
                                                 FileNameFragment.FILE_NAME_TEMPLATE_CONFIG), DEFAULT_FILENAME_TEMPLATE(
                                                         FileNameFragment.DEFAULT_FILENAME_TEMPLATE);
-        String key;
+        private final String keyValue;
 
-        FileNameArgs(String key) {
-            this.key = key;
+        FileNameArgs(final String key) {
+            this.keyValue = key;
         }
 
         public String key() {
-            return key;
+            return keyValue;
         }
     }
 
     @ParameterizedTest(name = "{index} {0}")
     @MethodSource("configDefSource")
-    public void configDefTest(FileNameArgs arg, ConfigDef.Type type, Object defaultValue, boolean validatorPresent,
-            ConfigDef.Importance importance, String group, int orderInGroup, ConfigDef.Width width,
-            boolean recommenderPresent) {
-        ConfigDef configDef = FileNameFragment.update(new ConfigDef());
-        ConfigDef.ConfigKey key = configDef.configKeys().get(arg.key());
+    void configDefTest(final FileNameArgs arg, final ConfigDef.Type type, final Object defaultValue,
+            final boolean validatorPresent, final ConfigDef.Importance importance, final String group,
+            final int orderInGroup, final ConfigDef.Width width, final boolean recommenderPresent) {
+        final ConfigDef configDef = FileNameFragment.update(new ConfigDef());
+        final ConfigDef.ConfigKey key = configDef.configKeys().get(arg.key());
 
         assertEquals(arg.key(), key.name, "Wrong key name");
         assertEquals(type, key.type, "Wrong key type");
@@ -87,9 +87,9 @@ public class FileNameFragmentTest {// NOPMD
     }
 
     @Test
-    public void allConfigDefsAccountForTest() {
+    void allConfigDefsAccountForTest() {
         // create a modifiable list.
-        List<FileNameArgs> argList = new ArrayList<>(Arrays.asList(FileNameArgs.values()));
+        final List<FileNameArgs> argList = new ArrayList<>(Arrays.asList(FileNameArgs.values()));
         // remove the non-argument values
         argList.remove(FileNameArgs.GROUP_FILE);
         argList.remove(FileNameArgs.DEFAULT_FILENAME_TEMPLATE);
@@ -99,7 +99,7 @@ public class FileNameFragmentTest {// NOPMD
     }
 
     private static Stream<Arguments> configDefSource() {
-        List<Arguments> args = new ArrayList<>();
+        final List<Arguments> args = new ArrayList<>();
 
         args.add(Arguments.of(FileNameArgs.FILE_NAME_TEMPLATE_CONFIG, ConfigDef.Type.STRING, null, true,
                 ConfigDef.Importance.MEDIUM, FileNameArgs.GROUP_FILE.key(), 0, ConfigDef.Width.LONG, false));
@@ -122,50 +122,46 @@ public class FileNameFragmentTest {// NOPMD
     }
 
     @Test
-    public void validateTest() {
-        ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
-        Map<String, String> props = new HashMap<>();
+    void validateTest() {
+        final ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
+        final Map<String, String> props = new HashMap<>();
         props.put(FileNameFragment.FILE_NAME_TEMPLATE_CONFIG, "my-file-name-template-{{key}}");
         props.put(FileNameFragment.FILE_MAX_RECORDS, "50");
-        AbstractConfig cfg = new AbstractConfig(configDef, props);
-
-        FileNameFragment underTest = new FileNameFragment(cfg);
+        final AbstractConfig cfg = new AbstractConfig(configDef, props);
+        final FileNameFragment underTest = new FileNameFragment(cfg);
         assertThrows(ConfigException.class, () -> underTest.validate());
     }
 
     @ParameterizedTest(name = "{index} {0}")
     @MethodSource("fieldNameSource")
-    public void getFilenameTest(String expected, Map<String, String> props) {
-        ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
-        AbstractConfig cfg = new AbstractConfig(configDef, props);
-
-        FileNameFragment underTest = new FileNameFragment(cfg);
+    void testGetFilename(final String expected, final Map<String, String> props) {
+        final ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
+        final AbstractConfig cfg = new AbstractConfig(configDef, props);
+        final FileNameFragment underTest = new FileNameFragment(cfg);
         assertEquals(expected, underTest.getFilename());
     }
 
     private static Stream<Arguments> fieldNameSource() {
-        List<Arguments> args = new ArrayList<>();
+        final List<Arguments> args = new ArrayList<>();
+        // we have to make new instances of props or the tests will fail.
         Map<String, String> props = new HashMap<>();
-        props.put(FileNameArgs.FILE_NAME_TEMPLATE_CONFIG.key, "my-file-name-template-{{key}}");
+        props.put(FileNameFragment.FILE_NAME_TEMPLATE_CONFIG, "my-file-name-template-{{key}}");
         args.add(Arguments.of("my-file-name-template-{{key}}", props));
 
         props = new HashMap<>();
         props.put(OutputFormatFragment.FORMAT_OUTPUT_TYPE_CONFIG, FormatType.CSV.name);
-        args.add(Arguments.of(FileNameArgs.DEFAULT_FILENAME_TEMPLATE.key, props));
+        args.add(Arguments.of(FileNameFragment.DEFAULT_FILENAME_TEMPLATE, props));
 
-        for (CompressionType compressionType : CompressionType.values()) {
-            props = new HashMap<>();
-            props.put(OutputFormatFragment.FORMAT_OUTPUT_TYPE_CONFIG, FormatType.CSV.name);
-            props.put(CompressionFragment.FILE_COMPRESSION_TYPE_CONFIG, compressionType.name);
-            args.add(Arguments.of(FileNameArgs.DEFAULT_FILENAME_TEMPLATE.key + compressionType.extension(), props));
+        for (final CompressionType compressionType : CompressionType.values()) {
+            args.add(Arguments.of(FileNameFragment.DEFAULT_FILENAME_TEMPLATE + compressionType.extension(),
+                    Map.of(OutputFormatFragment.FORMAT_OUTPUT_TYPE_CONFIG, FormatType.CSV.name,
+                            CompressionFragment.FILE_COMPRESSION_TYPE_CONFIG, compressionType.name)));
         }
 
-        for (CompressionType compressionType : CompressionType.values()) {
-            props = new HashMap<>();
-            props.put(OutputFormatFragment.FORMAT_OUTPUT_TYPE_CONFIG, FormatType.AVRO.name);
-            props.put(CompressionFragment.FILE_COMPRESSION_TYPE_CONFIG, compressionType.name);
-            args.add(Arguments.of(FileNameArgs.DEFAULT_FILENAME_TEMPLATE.key + ".avro" + compressionType.extension(),
-                    props));
+        for (final CompressionType compressionType : CompressionType.values()) {
+            args.add(Arguments.of(FileNameFragment.DEFAULT_FILENAME_TEMPLATE + ".avro" + compressionType.extension(),
+                    Map.of(OutputFormatFragment.FORMAT_OUTPUT_TYPE_CONFIG, FormatType.AVRO.name,
+                            CompressionFragment.FILE_COMPRESSION_TYPE_CONFIG, compressionType.name)));
         }
 
         return args.stream();
@@ -173,19 +169,18 @@ public class FileNameFragmentTest {// NOPMD
 
     @ParameterizedTest(name = "{index} {0}")
     @MethodSource("fieldNameSource")
-    public void getFilenameTemplateTest(String expected, Map<String, String> props) {
-        ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
-        AbstractConfig cfg = new AbstractConfig(configDef, props);
-
-        FileNameFragment underTest = new FileNameFragment(cfg);
+    void testGetFilenameTemplate(final String expected, final Map<String, String> props) {
+        final ConfigDef configDef = FileNameFragment.update(OutputFormatFragment.update(new ConfigDef(), null));
+        final AbstractConfig cfg = new AbstractConfig(configDef, props);
+        final FileNameFragment underTest = new FileNameFragment(cfg);
         // template does not implement equality
         assertEquals(expected, underTest.getFilenameTemplate().originalTemplate());
     }
 
     @Test
-    public void getFilenameTimezoneTest() {
+    void testGetFilenameTimezone() {
         final ConfigDef configDef = FileNameFragment.update(new ConfigDef());
-        Map<String, String> props = new HashMap<>();
+        final Map<String, String> props = new HashMap<>();
         props.put(FileNameFragment.FILE_NAME_TIMESTAMP_TIMEZONE, "Europe/Dublin");
         AbstractConfig cfg = new AbstractConfig(configDef, props);
         FileNameFragment underTest = new FileNameFragment(cfg);
@@ -202,9 +197,9 @@ public class FileNameFragmentTest {// NOPMD
     }
 
     @Test
-    public void getFilenameTimestampSource() {
+    void testGetFilenameTimestampSource() {
         final ConfigDef configDef = FileNameFragment.update(new ConfigDef());
-        Map<String, String> props = new HashMap<>();
+        final Map<String, String> props = new HashMap<>();
         AbstractConfig cfg = new AbstractConfig(configDef, props);
         FileNameFragment underTest = new FileNameFragment(cfg);
         TimestampSource src = underTest.getFilenameTimestampSource();
@@ -221,9 +216,9 @@ public class FileNameFragmentTest {// NOPMD
     }
 
     @Test
-    public void getMaxRecordsPerFile() {
+    void testGetMaxRecordsPerFile() {
         final ConfigDef configDef = FileNameFragment.update(new ConfigDef());
-        Map<String, String> props = new HashMap<>();
+        final Map<String, String> props = new HashMap<>();
         AbstractConfig cfg = new AbstractConfig(configDef, props);
         FileNameFragment underTest = new FileNameFragment(cfg);
         int count = underTest.getMaxRecordsPerFile();
