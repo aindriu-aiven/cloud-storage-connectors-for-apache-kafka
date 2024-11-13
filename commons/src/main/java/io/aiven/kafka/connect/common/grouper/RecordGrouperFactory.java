@@ -120,18 +120,6 @@ public final class RecordGrouperFactory {
             .map(v -> v.stream().map(Pair::getLeft).collect(Collectors.joining(",")))
             .collect(Collectors.joining("; "));
 
-    /** A list of sets of variables that are defined together as valid groupers */
-    private static final List<String> SUPPORTED_VARIABLE_SETS;
-
-    static {
-        SUPPORTED_VARIABLE_SETS = new ArrayList<>();
-        for (final List<Pair<String, Boolean>> lst : SUPPORTED_VARIABLES.values()) {
-            SUPPORTED_VARIABLE_SETS.add("[" + lst.stream()
-                    .map(pair -> pair.getLeft() + " " + (pair.getRight() ? "(required)" : "(not allowed)"))
-                    .collect(Collectors.joining(", ")) + "]");
-        }
-    }
-
     private RecordGrouperFactory() {
     }
 
