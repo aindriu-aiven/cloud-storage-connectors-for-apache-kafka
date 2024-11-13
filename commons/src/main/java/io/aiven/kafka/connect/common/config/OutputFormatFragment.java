@@ -16,7 +16,6 @@
 
 package io.aiven.kafka.connect.common.config;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,16 +29,23 @@ import io.aiven.kafka.connect.common.config.validators.OutputFieldsValidator;
 import io.aiven.kafka.connect.common.config.validators.OutputTypeValidator;
 
 public class OutputFormatFragment extends ConfigFragment {
-    private static final String GROUP_FORMAT = "Format";
-    private static final String FORMAT_OUTPUT_FIELDS_CONFIG = "format.output.fields";
-    private static final String FORMAT_OUTPUT_FIELDS_VALUE_ENCODING_CONFIG = "format.output.fields.value.encoding";
-    private static final String FORMAT_OUTPUT_TYPE_CONFIG = "format.output.type";
-    private static final String FORMAT_OUTPUT_ENVELOPE_CONFIG = "format.output.envelope";
+    // package protected for testing
+    static final String GROUP_FORMAT = "Format";
+    static final String FORMAT_OUTPUT_FIELDS_CONFIG = "format.output.fields";
+    static final String FORMAT_OUTPUT_FIELDS_VALUE_ENCODING_CONFIG = "format.output.fields.value.encoding";
+    static final String FORMAT_OUTPUT_TYPE_CONFIG = "format.output.type";
+    static final String FORMAT_OUTPUT_ENVELOPE_CONFIG = "format.output.envelope";
 
     public OutputFormatFragment(final AbstractConfig cfg) {
         super(cfg);
     }
 
+    /**
+     * Defines the parameters for the OutputFormatFragment.
+     * @param configDef the configuration definition to update.
+     * @param defaultFieldType the default FieldType.  May be {@code null}.
+     * @return The update ConfigDef.
+     */
     public static ConfigDef update(final ConfigDef configDef, final OutputFieldType defaultFieldType) {
         int formatGroupCounter = 0;
 
@@ -100,31 +106,34 @@ public class OutputFormatFragment extends ConfigFragment {
 
     /**
      * Returns a list of OutputField objects as specified by {@code FORMAT_OUTPUT_FIELDS_CONFIG}.
-     *
-     * @return a list of OutputField objects as specified by {@code FORMAT_OUTPUT_FIELDS_CONFIG}. May be null.
+     * @return a list of OutputField objects as specified by {@code FORMAT_OUTPUT_FIELDS_CONFIG}.
      */
     public List<OutputField> getOutputFields() {
         return getOutputFields(FORMAT_OUTPUT_FIELDS_CONFIG);
     }
 
     /**
-     * Returns a list of OutputField objects as specified by the {@code format} param.
-     *
-     * @param format
-     *            the configuration property that specifies the output field formats..
-     * @return a list of OutputField objects as specified by {@code format}. May be null.
+     * Returns {@code true} if {@link #FORMAT_OUTPUT_FIELDS_CONFIG} is set.
+     * @return  {@code true} if {@link #FORMAT_OUTPUT_FIELDS_CONFIG} is set.
      */
-    public List<OutputField> getOutputFields(final String format) {
-        final List<String> fields = cfg.getList(FORMAT_OUTPUT_FIELDS_CONFIG);
-        if (fields != null) {
-            return fields.stream().map(fieldName -> {
-                final var type = OutputFieldType.forName(fieldName);
-                final var encoding = type == OutputFieldType.KEY || type == OutputFieldType.VALUE
-                        ? getOutputFieldEncodingType()
-                        : OutputFieldEncodingType.NONE;
-                return new OutputField(type, encoding);
-            }).collect(Collectors.toUnmodifiableList());
-        }
-        return new ArrayList<>();
+    public boolean hasOutputFields() {
+        return has(FORMAT_OUTPUT_FIELDS_CONFIG);
+    }
+
+    /**
+     * Returns a list of OutputField objects as specified by the {@code configEntry} param.
+     * May throw a ConfigException if the configEntry is not present in the configuraiton.
+     * @param configEntry the configuration property that specifies the output field formats.
+     * @return a list of OutputField objects as specified by {@code configEntry}.
+     */
+    public List<OutputField> getOutputFields(final String configEntry) {
+        final List<String> fields = cfg.getList(configEntry);
+        return fields.stream().map(fieldName -> {
+            final var type = OutputFieldType.forName(fieldName);
+            final var encoding = type == OutputFieldType.KEY || type == OutputFieldType.VALUE
+                    ? getOutputFieldEncodingType()
+                    : OutputFieldEncodingType.NONE;
+            return new OutputField(type, encoding);
+        }).collect(Collectors.toUnmodifiableList());
     }
 }

@@ -61,11 +61,6 @@ public class BackoffPolicyConfig extends ConfigFragment {
         return configDef;
     }
 
-    @Override
-    void validate() {
-        // does nothing
-    }
-
     public Long getKafkaRetryBackoffMs() {
         return cfg.getLong(KAFKA_RETRY_BACKOFF_MS_CONFIG);
     }

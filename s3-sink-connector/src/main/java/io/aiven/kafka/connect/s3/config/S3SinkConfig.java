@@ -240,24 +240,15 @@ final public class S3SinkConfig extends S3SinkBaseConfig {
 
     @Override
     public List<OutputField> getOutputFields() {
-        List<OutputField> result = super.getOutputFields();
-
-        if (result == null) {
-            result = new OutputFormatFragment(this).getOutputFields(OUTPUT_FIELDS);
+        if (outputFormatFragment.hasOutputFields()) {
+            return super.getOutputFields();
         }
-        return result != null
-                ? result
-                : List.of(new OutputField(OutputFieldType.VALUE, OutputFieldEncodingType.BASE64));
-    }
 
-    public List<OutputField> getOutputFields(final String format) {
-        return getList(format).stream().map(fieldName -> {
-            final var type = OutputFieldType.forName(fieldName);
-            final var encoding = type == OutputFieldType.KEY || type == OutputFieldType.VALUE
-                    ? getOutputFieldEncodingType()
-                    : OutputFieldEncodingType.NONE;
-            return new OutputField(type, encoding);
-        }).collect(Collectors.toUnmodifiableList());
+        if (outputFormatFragment.has(OUTPUT_FIELDS)) {
+            return outputFormatFragment.getOutputFields(OUTPUT_FIELDS);
+        }
+
+        return List.of(new OutputField(OutputFieldType.VALUE, OutputFieldEncodingType.BASE64));
     }
 
     // TODO : remove this
