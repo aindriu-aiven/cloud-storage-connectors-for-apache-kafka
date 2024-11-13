@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.aiven.kafka.connect.common.config;
 
 import org.apache.kafka.common.config.AbstractConfig;
@@ -5,7 +21,7 @@ import org.apache.kafka.common.config.AbstractConfig;
 /**
  * Base for all configuration fragments.
  */
-public abstract class ConfigFragment {
+abstract class ConfigFragment {
     /** The configuration that this fragment is associated with */
     protected final AbstractConfig cfg;
 
@@ -13,7 +29,7 @@ public abstract class ConfigFragment {
      * Construct the ConfigFragment..
      * @param cfg the configuration that this fragment is associated with.
      */
-    protected ConfigFragment(AbstractConfig cfg) {
+    protected ConfigFragment(final AbstractConfig cfg) {
         this.cfg = cfg;
     }
 
@@ -30,7 +46,7 @@ public abstract class ConfigFragment {
      * @param key The key to check.
      * @return {@code true} if the key was set, {@code false} if the key was not set or does not exist in the config.
      */
-    public boolean has(String key) {
+    public final boolean has(String key) {
         return cfg.values().get(key) != null;
     }
 }
