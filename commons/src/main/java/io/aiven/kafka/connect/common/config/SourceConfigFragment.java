@@ -96,7 +96,7 @@ public final class SourceConfigFragment extends ConfigFragment {
         @Override
         public void ensureValid(final String name, final Object value) {
             final String errorsTolerance = (String) value;
-            if (StringUtils.isBlank(errorsTolerance)) {
+            if (StringUtils.isNotBlank(errorsTolerance)) {
                 // This will throw an Exception if not a valid value.
                 ErrorsTolerance.forName(errorsTolerance);
             }
