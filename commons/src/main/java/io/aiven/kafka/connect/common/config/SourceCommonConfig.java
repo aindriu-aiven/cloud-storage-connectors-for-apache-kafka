@@ -55,10 +55,6 @@ public class SourceCommonConfig extends CommonConfig {
         return schemaRegistryFragment.getInputFormat();
     }
 
-    public String getSchemaRegistryUrl() {
-        return schemaRegistryFragment.getSchemaRegistryUrl();
-    }
-
     public String getTargetTopics() {
         return sourceConfigFragment.getTargetTopics();
     }

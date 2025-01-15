@@ -25,8 +25,6 @@ import io.aiven.kafka.connect.common.source.input.InputFormat;
 
 public final class SchemaRegistryFragment extends ConfigFragment {
     private static final String SCHEMAREGISTRY_GROUP = "Schema registry group";
-    public static final String SCHEMA_REGISTRY_URL = "schema.registry.url";
-    public static final String VALUE_CONVERTER_SCHEMA_REGISTRY_URL = "value.converter.schema.registry.url";
     public static final String AVRO_VALUE_SERIALIZER = "value.serializer";
     public static final String INPUT_FORMAT_KEY = "input.format";
     public static final String SCHEMAS_ENABLE = "schemas.enable";
@@ -43,12 +41,6 @@ public final class SchemaRegistryFragment extends ConfigFragment {
 
     public static ConfigDef update(final ConfigDef configDef) {
         int srCounter = 0;
-        configDef.define(SCHEMA_REGISTRY_URL, ConfigDef.Type.STRING, null, new ConfigDef.NonEmptyString(),
-                ConfigDef.Importance.MEDIUM, "SCHEMA REGISTRY URL", SCHEMAREGISTRY_GROUP, srCounter++,
-                ConfigDef.Width.NONE, SCHEMA_REGISTRY_URL);
-        configDef.define(VALUE_CONVERTER_SCHEMA_REGISTRY_URL, ConfigDef.Type.STRING, null,
-                new ConfigDef.NonEmptyString(), ConfigDef.Importance.MEDIUM, "SCHEMA REGISTRY URL",
-                SCHEMAREGISTRY_GROUP, srCounter++, ConfigDef.Width.NONE, VALUE_CONVERTER_SCHEMA_REGISTRY_URL);
         configDef.define(INPUT_FORMAT_KEY, ConfigDef.Type.STRING, InputFormat.BYTES.getValue(),
                 new ConfigDef.NonEmptyString(), ConfigDef.Importance.MEDIUM,
                 "Input format of messages read from source avro/json/parquet/bytes", SCHEMAREGISTRY_GROUP, srCounter++, // NOPMD
@@ -63,10 +55,6 @@ public final class SchemaRegistryFragment extends ConfigFragment {
 
     public InputFormat getInputFormat() {
         return InputFormat.valueOf(cfg.getString(INPUT_FORMAT_KEY).toUpperCase(Locale.ROOT));
-    }
-
-    public String getSchemaRegistryUrl() {
-        return cfg.getString(SCHEMA_REGISTRY_URL);
     }
 
     public Class<?> getAvroValueSerializer() {

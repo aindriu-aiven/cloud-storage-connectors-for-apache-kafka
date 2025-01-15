@@ -18,7 +18,6 @@ package io.aiven.kafka.connect.common.source.input;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -31,8 +30,6 @@ import org.apache.commons.io.function.IOSupplier;
 import org.slf4j.Logger;
 
 public abstract class Transformer {
-
-    public abstract void configureValueConverter(Map<String, String> config, AbstractConfig sourceConfig);
 
     public final Stream<SchemaAndValue> getRecords(final IOSupplier<InputStream> inputStreamIOSupplier,
             final String topic, final int topicPartition, final AbstractConfig sourceConfig, final long skipRecords) {

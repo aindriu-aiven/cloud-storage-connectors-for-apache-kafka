@@ -21,14 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.json.JsonConverter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.function.IOSupplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -40,15 +38,9 @@ public class JsonTransformer extends Transformer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonTransformer.class);
 
-    final ObjectMapper objectMapper = new ObjectMapper();
-
     JsonTransformer(final JsonConverter jsonConverter) {
         super();
         this.jsonConverter = jsonConverter;
-    }
-
-    @Override
-    public void configureValueConverter(final Map<String, String> config, final AbstractConfig sourceConfig) {
     }
 
     @Override

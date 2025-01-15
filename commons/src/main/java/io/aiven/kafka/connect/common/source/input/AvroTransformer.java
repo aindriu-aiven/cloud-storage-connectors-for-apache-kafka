@@ -16,12 +16,9 @@
 
 package io.aiven.kafka.connect.common.source.input;
 
-import static io.aiven.kafka.connect.common.config.SchemaRegistryFragment.SCHEMA_REGISTRY_URL;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.kafka.common.config.AbstractConfig;
@@ -46,11 +43,6 @@ public class AvroTransformer extends Transformer {
     AvroTransformer(final AvroData avroData) {
         super();
         this.avroData = avroData;
-    }
-
-    @Override
-    public void configureValueConverter(final Map<String, String> config, final AbstractConfig sourceConfig) {
-        config.put(SCHEMA_REGISTRY_URL, sourceConfig.getString(SCHEMA_REGISTRY_URL));
     }
 
     @Override

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.apache.kafka.common.config.AbstractConfig;
@@ -35,11 +34,6 @@ public class ByteArrayTransformer extends Transformer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ByteArrayTransformer.class);
 
     private static final int MAX_BUFFER_SIZE = 4096;
-
-    @Override
-    public void configureValueConverter(final Map<String, String> config, final AbstractConfig sourceConfig) {
-        // For byte array transformations, ByteArrayConverter is the converter which is the default config.
-    }
 
     @Override
     public StreamSpliterator createSpliterator(final IOSupplier<InputStream> inputStreamIOSupplier, final String topic,
