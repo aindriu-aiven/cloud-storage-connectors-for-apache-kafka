@@ -30,7 +30,7 @@ import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
 import io.aiven.kafka.connect.common.source.task.Context;
 import io.aiven.kafka.connect.common.source.task.DistributionStrategy;
-import io.aiven.kafka.connect.common.source.task.enums.ObjectDistributionStrategy;
+import io.aiven.kafka.connect.common.source.task.DistributionType;
 import io.aiven.kafka.connect.s3.source.config.S3SourceConfig;
 
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -50,7 +50,6 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
     /** The AWS client that provides the S3Objects */
     private final AWSV2SourceClient sourceClient;
 
-    /** The task ID associated with this iterator */
     private int taskId;
 
     /** The S3 bucket we are processing */
@@ -64,7 +63,7 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
     final FileMatching fileMatching;
 
     final Predicate<Optional<S3SourceRecord>> taskAssignment;
-    private FilePatternUtils<S3Key> filePattern;
+    private FilePatternUtils filePattern;
 
     public SourceRecordIterator(final S3SourceConfig s3SourceConfig,
             final OffsetManager<S3OffsetManagerEntry> offsetManager, final Transformer transformer,
@@ -76,10 +75,9 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
         this.bucket = s3SourceConfig.getAwsS3BucketName();
         this.transformer = transformer;
         this.sourceClient = sourceClient;
-        this.taskAssignment = new TaskAssignment(initializeObjectDistributionStrategy(), filePattern);
+        this.taskAssignment = new TaskAssignment(initializeDistributionStrategy(), filePattern);
         this.taskId = s3SourceConfig.getTaskId();
         this.fileMatching = new FileMatching(filePattern);
-
         final Stream<S3SourceRecord> s3SourceRecordStream = sourceClient.getS3ObjectStream(null)
                 .map(fileMatching)
                 .filter(taskAssignment)
@@ -126,14 +124,13 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
 
     }
 
-    private DistributionStrategy initializeObjectDistributionStrategy() {
-        final ObjectDistributionStrategy objectDistributionStrategy = s3SourceConfig.getObjectDistributionStrategy();
+    private DistributionStrategy initializeDistributionStrategy() {
+        final DistributionType distributionType = s3SourceConfig.getDistributionType();
         final int maxTasks = s3SourceConfig.getMaxTasks();
         this.taskId = s3SourceConfig.getTaskId() % maxTasks;
-        this.filePattern = new FilePatternUtils<>(
-                s3SourceConfig.getS3FileNameFragment().getFilenameTemplate().toString(),
+        this.filePattern = new FilePatternUtils(s3SourceConfig.getS3FileNameFragment().getFilenameTemplate().toString(),
                 s3SourceConfig.getTargetTopics());
-        return objectDistributionStrategy.getDistributionStrategy(maxTasks);
+        return distributionType.getDistributionStrategy(maxTasks);
     }
 
     /**
@@ -163,9 +160,9 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
 
     class TaskAssignment implements Predicate<Optional<S3SourceRecord>> {
         final DistributionStrategy distributionStrategy;
-        final FilePatternUtils<S3Key> pattern;
+        final FilePatternUtils pattern;
 
-        TaskAssignment(final DistributionStrategy distributionStrategy, final FilePatternUtils<S3Key> utils) {
+        TaskAssignment(final DistributionStrategy distributionStrategy, final FilePatternUtils utils) {
             this.distributionStrategy = distributionStrategy;
             this.pattern = utils;
         }
@@ -174,7 +171,7 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
         public boolean test(final Optional<S3SourceRecord> s3SourceRecord) {
             if (s3SourceRecord.isPresent()) {
                 final S3SourceRecord record = s3SourceRecord.get();
-                final Optional<Context<S3Key>> ctx = pattern.process(new S3Key(record.getObjectKey()));
+                final Optional<Context<String>> ctx = pattern.process(record.getObjectKey());
                 if (ctx.isPresent()) {
                     return taskId == distributionStrategy.getTaskFor(ctx.get());
                 }
@@ -185,15 +182,15 @@ public final class SourceRecordIterator implements Iterator<S3SourceRecord> {
 
     class FileMatching implements Function<S3Object, Optional<S3SourceRecord>> {
 
-        final FilePatternUtils<S3Key> utils;
-        FileMatching(final FilePatternUtils<S3Key> utils) {
+        final FilePatternUtils utils;
+        FileMatching(final FilePatternUtils utils) {
             this.utils = utils;
         }
 
         @Override
         public Optional<S3SourceRecord> apply(final S3Object s3Object) {
 
-            final Optional<Context<S3Key>> context = utils.process(new S3Key(s3Object.key()));
+            final Optional<Context<String>> context = utils.process(s3Object.key());
             if (context.isPresent()) {
                 final S3SourceRecord s3SourceRecord = new S3SourceRecord(s3Object);
                 S3OffsetManagerEntry offsetManagerEntry = new S3OffsetManagerEntry(bucket, s3Object.key(),

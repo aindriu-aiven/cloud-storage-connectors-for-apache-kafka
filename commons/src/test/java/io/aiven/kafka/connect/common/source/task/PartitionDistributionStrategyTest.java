@@ -23,14 +23,13 @@ import java.util.List;
 import java.util.Optional;
 
 import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
-import io.aiven.kafka.connect.common.source.task.enums.ObjectDistributionStrategy;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 final class PartitionDistributionStrategyTest {
-    final ObjectDistributionStrategy strategy = ObjectDistributionStrategy.PARTITION;
+    final DistributionType strategy = DistributionType.PARTITION;
     @Test
     void partitionInFileNameDefaultAivenS3Sink() {
         final DistributionStrategy taskDistribution = strategy.getDistributionStrategy(2);
@@ -222,7 +221,7 @@ final class PartitionDistributionStrategyTest {
 
     public static Optional<Context<String>> getOptionalContext(final String configuredFilenamePattern,
             final String filename) {
-        final FilePatternUtils<String> utils = new FilePatternUtils<>(configuredFilenamePattern, null);
+        final FilePatternUtils utils = new FilePatternUtils(configuredFilenamePattern, null);
         return utils.process(filename);
     }
 

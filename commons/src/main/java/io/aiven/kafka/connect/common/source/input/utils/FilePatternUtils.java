@@ -26,9 +26,10 @@ import io.aiven.kafka.connect.common.source.task.Context;
 
 import org.apache.commons.lang3.StringUtils;
 
-public final class FilePatternUtils<K> {
+public final class FilePatternUtils {
     public static final String PATTERN_PARTITION_KEY = "partition";
     public static final String PATTERN_TOPIC_KEY = "topic";
+    public static final String PATTERN_START_OFFSET_KEY = "startOffset"; // no undercore allowed as it breaks the regex.
     public static final String START_OFFSET_PATTERN = "{{start_offset}}";
     public static final String TIMESTAMP_PATTERN = "{{timestamp}}";
     public static final String PARTITION_PATTERN = "{{" + PATTERN_PARTITION_KEY + "}}";
@@ -37,6 +38,7 @@ public final class FilePatternUtils<K> {
     // Use a named group to return the partition in a complex string to always get the correct information for the
     // partition number.
     public static final String PARTITION_NAMED_GROUP_REGEX_PATTERN = "(?<" + PATTERN_PARTITION_KEY + ">\\d+)";
+    public static final String START_OFFSET_NAMED_GROUP_REGEX_PATTERN = "(?<" + PATTERN_START_OFFSET_KEY + ">\\d+)";
     public static final String NUMBER_REGEX_PATTERN = "(?:\\d+)";
     public static final String TOPIC_NAMED_GROUP_REGEX_PATTERN = "(?<" + PATTERN_TOPIC_KEY + ">[a-zA-Z0-9\\-_.]+)";
 
@@ -61,7 +63,8 @@ public final class FilePatternUtils<K> {
                     "Source name format is missing please configure the expected source to include the partition pattern.");
         }
         // Build REGEX Matcher
-        String regexString = StringUtils.replace(expectedSourceNameFormat, START_OFFSET_PATTERN, NUMBER_REGEX_PATTERN);
+        String regexString = StringUtils.replace(expectedSourceNameFormat, START_OFFSET_PATTERN,
+                START_OFFSET_NAMED_GROUP_REGEX_PATTERN);
         regexString = StringUtils.replace(regexString, TIMESTAMP_PATTERN, NUMBER_REGEX_PATTERN);
         regexString = StringUtils.replace(regexString, TOPIC_PATTERN, TOPIC_NAMED_GROUP_REGEX_PATTERN);
         regexString = StringUtils.replace(regexString, PARTITION_PATTERN, PARTITION_NAMED_GROUP_REGEX_PATTERN);
@@ -74,62 +77,57 @@ public final class FilePatternUtils<K> {
         }
     }
 
-    public Optional<Context<K>> process(final K sourceName) {
-        if (fileMatches(sourceName.toString())) {
+    public <K> Optional<Context<K>> process(final K sourceName) {
+        final Optional<Matcher> matcher = fileMatches(sourceName.toString());
+        if (matcher.isPresent()) {
             final Context<K> ctx = new Context<>(sourceName);
-            getTopic(sourceName.toString()).ifPresent(ctx::setTopic);
-            getPartitionId(sourceName.toString()).ifPresent(ctx::setPartition);
-            getOffset(sourceName.toString()).ifPresent(ctx::setOffset);
+            getTopic(matcher.get()).ifPresent(ctx::setTopic);
+            getPartitionId(matcher.get()).ifPresent(ctx::setPartition);
+            getOffset(matcher.get()).ifPresent(ctx::setOffset);
             return Optional.of(ctx);
         }
         return Optional.empty();
 
     }
 
-    private boolean fileMatches(final String sourceName) {
-        return matchPattern(sourceName).isPresent();
+    private Optional<Matcher> fileMatches(final String sourceName) {
+        return matchPattern(sourceName);
     }
 
-    private Optional<String> getTopic(final String sourceName) {
+    private Optional<String> getTopic(final Matcher matcher) {
         if (targetTopic.isPresent()) {
             return targetTopic;
         }
 
-        return matchPattern(sourceName).flatMap(matcher -> {
-            try {
-                // TODO check why this worked before without the try catch
-                return Optional.of(matcher.group(PATTERN_TOPIC_KEY));
-            } catch (IllegalArgumentException ex) {
-                // It is possible that when checking for the group it does not match and returns an
-                // illegalArgumentException
-                return Optional.empty();
-            }
-        });
-    }
-
-    private Optional<Integer> getPartitionId(final String sourceName) {
-        return matchPattern(sourceName).flatMap(matcher -> {
-            try {
-                return Optional.of(Integer.parseInt(matcher.group(PATTERN_PARTITION_KEY)));
-            } catch (IllegalArgumentException e) {
-                // It is possible that when checking for the group it does not match and returns an
-                // illegalStateException, Number format exception is also covered by this in this case.
-                return Optional.empty();
-            }
-        });
+        try {
+            return Optional.of(matcher.group(PATTERN_TOPIC_KEY));
+        } catch (IllegalArgumentException ex) {
+            // It is possible that when checking for the group it does not match and returns an
+            // illegalArgumentException
+            return Optional.empty();
+        }
 
     }
 
-    private Optional<Integer> getOffset(final String sourceName) {
-        return matchPattern(sourceName).flatMap(matcher -> {
-            try {
-                return Optional.of(Integer.parseInt(matcher.group(START_OFFSET_PATTERN)));
-            } catch (IllegalArgumentException e) {
-                // It is possible that when checking for the group it does not match and returns an
-                // illegalStateException, Number format exception is also covered by this in this case.
-                return Optional.empty();
-            }
-        });
+    private Optional<Integer> getPartitionId(final Matcher matcher) {
+        try {
+            return Optional.of(Integer.parseInt(matcher.group(PATTERN_PARTITION_KEY)));
+        } catch (IllegalArgumentException e) {
+            // It is possible that when checking for the group it does not match and returns an
+            // illegalStateException, Number format exception is also covered by this in this case.
+            return Optional.empty();
+        }
+
+    }
+
+    private Optional<Integer> getOffset(final Matcher matcher) {
+        try {
+            return Optional.of(Integer.parseInt(matcher.group(PATTERN_START_OFFSET_KEY)));
+        } catch (IllegalArgumentException e) {
+            // It is possible that when checking for the group it does not match and returns an
+            // illegalStateException, Number format exception is also covered by this in this case.
+            return Optional.empty();
+        }
 
     }
 
