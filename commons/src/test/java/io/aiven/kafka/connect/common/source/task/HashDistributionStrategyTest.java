@@ -90,12 +90,53 @@ final class HashDistributionStrategyTest {
         assertThat(results).allMatch(i -> i == taskDistribution.getTaskFor(ctx));
     }
 
+    @ParameterizedTest
+    @CsvSource({ "key-0.txt,-0", "key-0002.txt,-1", "key-0002.txt,-999", "anImage8-0002.png,-01",
+            "reallylongfilenamecreatedonS3tohisdesomedata and alsohassome spaces.txt,-2002020" })
+    void hashDistributionWithNegativeValues(final String path, int hashCode) {
+        int maxTasks = 10;
+        final DistributionStrategy taskDistribution = strategy.getDistributionStrategy(maxTasks);
+        final FilePatternUtils utils = new FilePatternUtils(".*", "targetTopic");
+        final Optional<Context<HashCodeKey>> ctx = utils.process(new HashCodeKey(hashCode));
+
+        assertThat(ctx).isPresent();
+        int result = taskDistribution.getTaskFor(ctx.get());
+
+        assertThat(result).isLessThan(maxTasks);
+        assertThat(result).isGreaterThanOrEqualTo(0);
+
+    }
+
     private Context<String> getContext(final String expectedSourceName, final String filename,
             final String targetTopic) {
-        final FilePatternUtils<String> utils = new FilePatternUtils<>(expectedSourceName, targetTopic);
+        final FilePatternUtils utils = new FilePatternUtils(expectedSourceName, targetTopic);
         final Optional<Context<String>> ctx = utils.process(filename);
         assertThat(ctx.isPresent()).isTrue();
         // Hash distribution can have an empty context can have an empty context
         return ctx.get();
+    }
+
+    static class HashCodeKey {
+        private final int hashCode;
+        public HashCodeKey(final int hashCode) {
+            this.hashCode = hashCode;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final HashCodeKey that = (HashCodeKey) o;
+            return hashCode == that.hashCode;
+        }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
     }
 }
