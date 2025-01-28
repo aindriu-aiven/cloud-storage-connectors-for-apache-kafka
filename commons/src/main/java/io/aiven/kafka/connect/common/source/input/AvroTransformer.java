@@ -50,6 +50,7 @@ public class AvroTransformer extends Transformer {
     @Override
     public StreamSpliterator createSpliterator(final IOSupplier<InputStream> inputStreamIOSupplier,
             final long streamLength, final Context<?> context, final SourceCommonConfig sourceConfig) {
+
         return new StreamSpliterator(LOGGER, inputStreamIOSupplier) {
             private DataFileStream<GenericRecord> dataFileStream;
             private final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();

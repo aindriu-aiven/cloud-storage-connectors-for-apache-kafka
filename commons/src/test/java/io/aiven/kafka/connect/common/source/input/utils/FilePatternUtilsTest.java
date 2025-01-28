@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import io.aiven.kafka.connect.common.source.task.Context;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -45,7 +46,10 @@ class FilePatternUtilsTest {
             "{{topic}}-{{start_offset}}-{{partition}}.txt, logs2-0001-1.txt, logs2,0001,1",
             "{{topic}}-{{start_offset}}-{{partition}}.txt, logs2-99999-1.txt, logs2,1,99999",
             "{{partition}}-{{start_offset}}-{{topic}}.txt, logs2-1-logs2.txt, logs2,2,0001",
-            "{{partition}}-{{start_offset}}-{{topic}}.txt, logs2-1-logs2.txt, logs2,2,0001", })
+            "{{partition}}-{{start_offset}}-{{topic}}.txt, logs2-1-logs2.txt, logs2,2,0001",
+            "{{topic}}-{{start_offset}}-{{partition}}.txt, logs2-99999-0001.txt, logs2,1,99999",
+            "{{partition}}-{{start_offset}}-{{topic}}.txt, logs0002-01-logs2.txt, logs2,2,0001",
+            "{{partition}}-{{start_offset}}-{{topic}}.txt, logs002-1-logs2.txt, logs2,2,0001", })
     void checkTopicDistribution(final String expectedSourceFormat, final String sourceName, final String expectedTopic,
             final int expectedPartition, final int expectedOffset) {
 
@@ -58,6 +62,21 @@ class FilePatternUtilsTest {
         assertThat(ctx.get().getPartition().get()).isEqualTo(expectedPartition);
         assertThat(ctx.get().getOffset().isPresent()).isTrue();
         assertThat(ctx.get().getOffset().get()).isEqualTo(expectedOffset);
+    }
+
+    @Test
+    void kcon107Test() {
+        final String fileName = "22-10-2025/something else/topic-1-9999.txt";
+        final FilePatternUtils utils = new FilePatternUtils(
+                "\\d{2}-\\d{2}-\\d{4}/.*/{{topic}}-{{partition}}-{{start_offset}}");
+        final Optional<Context<String>> ctx = utils.process(fileName);
+        assertThat(ctx.isPresent()).isTrue();
+        assertThat(ctx.get().getTopic().isPresent()).isTrue();
+        assertThat(ctx.get().getTopic().get()).isEqualTo("topic");
+        assertThat(ctx.get().getPartition().isPresent()).isTrue();
+        assertThat(ctx.get().getPartition().get()).isEqualTo(1);
+        assertThat(ctx.get().getOffset().isPresent()).isTrue();
+        assertThat(ctx.get().getOffset().get()).isEqualTo(9999);
     }
 
 }
