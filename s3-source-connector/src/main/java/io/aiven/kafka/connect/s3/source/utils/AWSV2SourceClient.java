@@ -36,7 +36,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * Called AWSV2SourceClient as this source client implements the V2 version of the aws client library. Handles all calls
- * and authentication to AWS and returns useable objects to the SourceRecordIterator.
+ * and authentication to AWS and returns useable objects to the AbstractSourceRecordIterator.
  */
 public class AWSV2SourceClient {
 

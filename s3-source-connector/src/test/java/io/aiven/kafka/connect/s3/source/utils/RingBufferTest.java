@@ -18,6 +18,7 @@ package io.aiven.kafka.connect.s3.source.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.aiven.kafka.connect.common.source.RingBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
