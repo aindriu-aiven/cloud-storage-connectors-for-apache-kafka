@@ -16,6 +16,18 @@
 
 package io.aiven.kafka.connect.common.source;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.aiven.kafka.connect.common.config.SourceCommonConfig;
+import io.aiven.kafka.connect.common.source.input.Transformer;
+import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
+import io.aiven.kafka.connect.common.source.task.Context;
+import io.aiven.kafka.connect.common.source.task.DistributionStrategy;
+import io.aiven.kafka.connect.common.source.task.DistributionType;
+import org.apache.commons.io.function.IOSupplier;
+import org.apache.kafka.connect.data.SchemaAndValue;
+import org.slf4j.Logger;
+
+
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Iterator;
@@ -24,37 +36,21 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.apache.kafka.connect.data.SchemaAndValue;
-
-import io.aiven.kafka.connect.common.config.SourceCommonConfig;
-import io.aiven.kafka.connect.common.source.input.Transformer;
-import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
-import io.aiven.kafka.connect.common.source.task.Context;
-import io.aiven.kafka.connect.common.source.task.DistributionStrategy;
-import io.aiven.kafka.connect.common.source.task.DistributionType;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.apache.commons.io.function.IOSupplier;
-import org.slf4j.Logger;
-
 /**
  * Iterator that processes cloud storage items and creates Kafka source records. Supports multiple output formats.
- *
- * @param <N>
- *            the native object type.
- * @param <K>
- *            the key type for the native object.
- * @param <O>
- *            the OffsetManagerEntry for the iterator.
- * @param <T>
- *            The source record for the client type.
+ * @param <N> the native object type.
+ * @param <K> the key type for the native object.
+ * @param <OME> the OffsetManagerEntry for the iterator.
+ * @param <T> The source record for the client type.
  *
  */
-public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>>
-        implements
-            Iterator<T> {
+public abstract class AbstractSourceRecordIterator<
+        N,
+        K extends Comparable<K>,
+        OME extends OffsetManager.OffsetManagerEntry<OME>,
+        T extends AbstractSourceRecord<N, K, OME>> implements Iterator<T> {
     /** The OffsetManager that we are using */
-    private final OffsetManager<O> offsetManager;
+    private final OffsetManager<OME> offsetManager;
 
     /** The configuration for the source */
     private final SourceCommonConfig sourceConfig;
@@ -69,8 +65,8 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
      */
     private Iterator<T> inner;
     /**
-     * The outer iterator that provides an AbstractSourceRecord for each record contained by the storage item identified
-     * by the inner record.
+     * The outer iterator that provides an AbstractSourceRecord for each record contained by the storage item identified by the
+     * inner record.
      */
     private Iterator<T> outer;
     /** The topic(s) which have been configured with the 'topics' configuration */
@@ -83,51 +79,45 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
     /** The utility to extract the context from the native item key */
     private FilePatternUtils filePattern;
     /**
-     * The native item key which is currently being processed, when rehydrating from the storage engine we will skip
-     * other native items that come before this key.
+     * The native item key which is currently being processed, when rehydrating from the storage engine we will skip other
+     * native items that come before this key.
      */
     private K lastSeenNativeKey;
 
     /**
-     * The ring buffer which contains recently processed native item keys, this is used during a restart to skip keys
-     * that are known to have been processed while still accounting for the possibility that slower writing to storage
-     * may have introduced newer keys.
+     * The ring buffer which contains recently processed native item keys, this is used during a restart to skip keys that
+     * are known to have been processed while still accounting for the possibility that slower writing to storage may have
+     * introduced newer keys.
      */
     private final RingBuffer<K> ringBuffer;
 
     @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "stores mutable fields in offset manager to be reviewed before release")
-    public AbstractSourceRecordIterator(final SourceCommonConfig sourceConfig, final OffsetManager<O> offsetManager,
-            final Transformer transformer, final int bufferSize) {
+    public AbstractSourceRecordIterator(final SourceCommonConfig sourceConfig, final OffsetManager<OME> offsetManager, final Transformer transformer,
+                                        final int bufferSize) {
         super();
-
-        final DistributionType distributionType = sourceConfig.getDistributionType();
-        final int maxTasks = sourceConfig.getMaxTasks();
-
         this.sourceConfig = sourceConfig;
         this.offsetManager = offsetManager;
         this.transformer = transformer;
         this.targetTopics = Optional.ofNullable(sourceConfig.getTargetTopic());
-        this.taskId = sourceConfig.getTaskId() % maxTasks;
-        this.filePattern = getFilePatternUtils(sourceConfig);
-        this.taskAssignment = new TaskAssignment(distributionType.getDistributionStrategy(maxTasks));
+        this.taskAssignment = new TaskAssignment(initializeDistributionStrategy());
         this.taskId = sourceConfig.getTaskId();
         this.fileMatching = new FileMatching(filePattern);
-        this.inner = Collections.emptyIterator();
+        this.inner = getSourceRecordStream(null).iterator();
         this.outer = Collections.emptyIterator();
-        this.ringBuffer = new RingBuffer<>(Math.max(1, bufferSize));
+        this.ringBuffer = new RingBuffer<>(Math.max(1,bufferSize));
     }
 
     abstract protected Logger getLogger();
 
-    abstract protected Stream<T> getSourceRecordStream(K offset);
+    abstract protected Stream<T> getSourceRecordStream(K offset) ;
 
     abstract protected IOSupplier<InputStream> getInputStream(T sourceRecord);
 
-    abstract protected FilePatternUtils getFilePatternUtils(final SourceCommonConfig sourceConfig);
+    abstract protected FilePatternUtils getFilePatternUtils();
 
     abstract protected K getName(N nativeObject);
     abstract protected T createSourceRecord(N nativeObject);
-    abstract protected O createOffsetManagerEntry(N nativeObject);
+    abstract protected OME createOffsetManagerEntry(N nativeObject);
     abstract protected OffsetManager.OffsetManagerKey getOffsetManagerKey();
 
     final protected K getLastSeenNativeKey() {
@@ -168,47 +158,45 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
      * @return a stream of T created from the input stream of the native item.
      */
     private Stream<T> convert(final T sourceRecord) {
-        sourceRecord
-                .setKeyData(transformer.getKeyData(sourceRecord.getNativeKey(), sourceRecord.getTopic(), sourceConfig));
+        sourceRecord.setKeyData(transformer.getKeyData(sourceRecord.getNativeKey(),
+                sourceRecord.getTopic(), sourceConfig));
 
         lastSeenNativeKey = sourceRecord.getNativeKey();
 
         return transformer
-                .getRecords(getInputStream(sourceRecord), sourceRecord.getNativeItemSize(), sourceRecord.getContext(),
+                .getRecords(
+                        getInputStream(sourceRecord),
+                        sourceRecord.getNativeItemSize(), sourceRecord.getContext(),
                         sourceConfig, sourceRecord.getRecordCount())
-                .map(new Mapper<N, K, O, T>(sourceRecord));
+                .map(new Mapper<N, K, OME, T>(sourceRecord));
 
     }
 
     /**
      * Initializes the distribution strategy based on the configuration.
-     *
      * @return the DistributionStrategy.
      */
     private DistributionStrategy initializeDistributionStrategy() {
         final DistributionType distributionType = sourceConfig.getDistributionType();
         final int maxTasks = sourceConfig.getMaxTasks();
         this.taskId = sourceConfig.getTaskId() % maxTasks;
-        this.filePattern = getFilePatternUtils(sourceConfig);
+        this.filePattern = getFilePatternUtils();
         return distributionType.getDistributionStrategy(maxTasks);
     }
 
     /**
      * Maps the data from the @{link Transformer} stream to an AbstractSourceRecord given all the additional data
      * required.
-     *
-     * @param <N>
-     *            the native object type.
-     * @param <K>
-     *            the key type for the native object.
-     * @param <O>
-     *            the OffsetManagerEntry for the iterator.
-     * @param <T>
-     *            The source record for the client type.
+     * @param <N> the native object type.
+     * @param <K> the key type for the native object.
+     * @param <OME> the OffsetManagerEntry for the iterator.
+     * @param <T> The source record for the client type.
      */
-    static class Mapper<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>>
-            implements
-                Function<SchemaAndValue, T> {
+    static class Mapper<
+            N,
+            K extends Comparable<K>,
+            OME extends OffsetManager.OffsetManagerEntry<OME>,
+            T extends AbstractSourceRecord<N, K, OME>> implements Function<SchemaAndValue, T> {
         /**
          * The AbstractSourceRecord that produces the values.
          */
@@ -237,9 +225,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         /**
          * Constructs a task assignment from the distribution strategy.
-         *
-         * @param distributionStrategy
-         *            The distribution strategy.
+         * @param distributionStrategy The distribution strategy.
          */
         TaskAssignment(final DistributionStrategy distributionStrategy) {
             this.distributionStrategy = distributionStrategy;
@@ -247,7 +233,13 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         @Override
         public boolean test(final Optional<T> sourceRecord) {
-            return sourceRecord.filter(t -> taskId == distributionStrategy.getTaskFor(t.getContext())).isPresent();
+            if (sourceRecord.isPresent()) {
+                final T record = sourceRecord.get();
+                final Context<K> context = record.getContext();
+                return taskId == distributionStrategy.getTaskFor(context);
+
+            }
+            return false;
         }
     }
 
@@ -262,9 +254,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         /**
          * Created a FileMatching from the specified FilePatternUtils.
-         *
-         * @param utils
-         *            the file pattern utils to use.
+         * @param utils the file pattern utils to use.
          */
         FileMatching(final FilePatternUtils utils) {
             this.utils = utils;
@@ -272,14 +262,14 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         @Override
         public Optional<T> apply(final N nativeItem) {
-            final K itemName = getName(nativeItem);
+            K itemName = getName(nativeItem);
             final Optional<Context<K>> optionalContext = utils.process(itemName);
-            if (optionalContext.isPresent() && !ringBuffer.contains(itemName)) {
+            if (optionalContext.isPresent()  && !ringBuffer.contains(itemName)) {
                 final T sourceRecord = createSourceRecord(nativeItem);
                 final Context<K> context = optionalContext.get();
                 overrideContextTopic(context);
                 sourceRecord.setContext(context);
-                O offsetManagerEntry = createOffsetManagerEntry(nativeItem);
+                OME offsetManagerEntry = createOffsetManagerEntry(nativeItem);
                 offsetManagerEntry = offsetManager
                         .getEntry(offsetManagerEntry.getManagerKey(), offsetManagerEntry::fromProperties)
                         .orElse(offsetManagerEntry);
@@ -291,9 +281,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         /**
          * Sets the target topic in the context if it has been set from configuration.
-         *
-         * @param context
-         *            the context to set the topic in if found.
+         * @param context the context to set the topic in if found.
          */
         private void overrideContextTopic(final Context<K> context) {
             if (targetTopics.isPresent()) {

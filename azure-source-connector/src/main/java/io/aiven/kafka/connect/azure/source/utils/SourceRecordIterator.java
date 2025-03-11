@@ -20,18 +20,17 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.aiven.kafka.connect.common.config.SourceCommonConfig;
+import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
+import org.apache.commons.io.function.IOSupplier;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 
 import io.aiven.kafka.connect.azure.source.config.AzureBlobSourceConfig;
-import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
 
 import com.azure.storage.blob.models.BlobItem;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.apache.commons.io.function.IOSupplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,7 @@ import org.slf4j.LoggerFactory;
  * Iterator that processes Azure Blob files and creates Kafka source records. Supports different output formats (Avro,
  * JSON, Parquet).
  */
-public final class SourceRecordIterator
-        extends
-            AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
+public final class SourceRecordIterator extends AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
 
     /** The configuration for this Azure blob source */
     private final AzureBlobSourceConfig azureBlobSourceConfig;
@@ -66,7 +63,7 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected Stream<AzureBlobSourceRecord> getSourceRecordStream(final String offset) {
+    protected Stream<AzureBlobSourceRecord> getSourceRecordStream(String offset) {
         return azureBlobClient.getAzureBlobStream().map(fileMatching).filter(taskAssignment).map(Optional::get);
     }
 
@@ -76,13 +73,12 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected IOSupplier<InputStream> getInputStream(final AzureBlobSourceRecord sourceRecord) {
+    protected IOSupplier<InputStream> getInputStream(AzureBlobSourceRecord sourceRecord) {
         return () -> new ByteBufferInputStream(azureBlobClient.getBlob(sourceRecord.getNativeKey()).blockFirst());
     }
 
     @Override
-    protected FilePatternUtils getFilePatternUtils(final SourceCommonConfig commonConfig) {
-        AzureBlobSourceConfig azureBlobSourceConfig = (AzureBlobSourceConfig) commonConfig;
+    protected FilePatternUtils getFilePatternUtils() {
         return new FilePatternUtils(azureBlobSourceConfig.getAzureBlobFileNameFragment().getFilenameTemplate().toString());
     }
 
@@ -92,12 +88,12 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected AzureBlobSourceRecord createSourceRecord(final BlobItem nativeObject) {
+    protected AzureBlobSourceRecord createSourceRecord(BlobItem nativeObject) {
         return new AzureBlobSourceRecord(nativeObject);
     }
 
     @Override
-    protected AzureOffsetManagerEntry createOffsetManagerEntry(final BlobItem nativeObject) {
+    protected AzureOffsetManagerEntry createOffsetManagerEntry(BlobItem nativeObject) {
         return new AzureOffsetManagerEntry(container, getName(nativeObject));
     }
 
