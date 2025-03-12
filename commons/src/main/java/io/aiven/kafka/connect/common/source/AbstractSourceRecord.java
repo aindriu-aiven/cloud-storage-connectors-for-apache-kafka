@@ -16,40 +16,52 @@
 
 package io.aiven.kafka.connect.common.source;
 
-import io.aiven.kafka.connect.common.config.enums.ErrorsTolerance;
-import io.aiven.kafka.connect.common.source.task.Context;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.source.SourceRecord;
+
+import io.aiven.kafka.connect.common.config.enums.ErrorsTolerance;
+import io.aiven.kafka.connect.common.source.task.Context;
+
 import org.slf4j.Logger;
 
 /**
  * An abstract source record as retrieved from the storage layer.
- * @param <N> the native object type.
- * @param <K> the key type for the native object.
- * @param <OME> the OffsetManagerEntry for the iterator.
+ *
+ * @param <N>
+ *            the native object type.
+ * @param <K>
+ *            the key type for the native object.
+ * @param <O>
+ *            the OffsetManagerEntry for the iterator.
+ * @param <T>
+ *            the concrete implementation class for AbstractSourceRecord.
  */
-public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME extends OffsetManager.OffsetManagerEntry<OME>> {
+public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
     private SchemaAndValue keyData;
     private SchemaAndValue valueData;
-    private OME offsetManagerEntry;
+    private O offsetManagerEntry;
     private Context<K> context;
     private final N nativeItem;
 
     /**
      * Construct a source record from a native item.
-     * @param nativeItem the native item to extract the source record from.
+     *
+     * @param nativeItem
+     *            the native item to extract the source record from.
      */
     public AbstractSourceRecord(final N nativeItem) {
         this.nativeItem = nativeItem;
     }
 
     /**
-     * Copy constructor for an abstract source record.  This constructor makes a copy of the OffsetManagerEntry.
-     * @param sourceRecord the source record to copy.
+     * Copy constructor for an abstract source record. This constructor makes a copy of the OffsetManagerEntry.
+     *
+     * @param sourceRecord
+     *            the source record to copy.
      */
-    protected AbstractSourceRecord(final AbstractSourceRecord<N, K, OME> sourceRecord) {
+    protected AbstractSourceRecord(final AbstractSourceRecord<N, K, O, T> sourceRecord) {
         this(sourceRecord.nativeItem);
         this.offsetManagerEntry = sourceRecord.offsetManagerEntry
                 .fromProperties(sourceRecord.getOffsetManagerEntry().getProperties());
@@ -60,32 +72,36 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
 
     /**
      * Gets then key for the native object.
+     *
      * @return The key for the native object.
      */
     abstract public K getNativeKey();
 
     /**
      * Gets the number of bytes in the input stream extracted from the native object.
+     *
      * @return The number of bytes in the input stream extracted from the native object.
      */
     abstract public long getNativeItemSize();
 
     /**
-     * Makes a duplicate of this AbstractSourceRecord.  This is similar to the Java {@code clone} method but without
-     * the baggage.
+     * Makes a duplicate of this AbstractSourceRecord. This is similar to the Java {@code clone} method but without the
+     * baggage.
+     *
      * @return A duplicate of this AbstractSourceRecord
-     * @param <T> This abstract source record type.
      */
-    abstract public <T extends AbstractSourceRecord<N, K, OME>> T duplicate();
+    abstract public T duplicate();
 
     /**
      * Gets the logger from the implementing class.
+     *
      * @return The logger from the implementing class.
      */
     protected abstract Logger getLogger();
 
     /**
      * Gets the native item that this source record is working with.
+     *
      * @return The native item that this source record is working with.
      */
     protected N getNativeItem() {
@@ -93,15 +109,19 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
     }
 
     /**
-     * Gets the record count as recorded by the OffsetManager for the native item that this source record is working with.
-     * @return The record count as recorded by the OffsetManager for the native item that this source record is working with.
+     * Gets the record count as recorded by the OffsetManager for the native item that this source record is working
+     * with.
+     *
+     * @return The record count as recorded by the OffsetManager for the native item that this source record is working
+     *         with.
      */
     final public long getRecordCount() {
         return offsetManagerEntry == null ? 0 : offsetManagerEntry.getRecordCount();
     }
 
     /**
-     * Increments the record count as recorded by the OffsetManager for the native item that this source record is working with.
+     * Increments the record count as recorded by the OffsetManager for the native item that this source record is
+     * working with.
      */
     final public void incrementRecordCount() {
         this.offsetManagerEntry.incrementRecordCount();
@@ -109,7 +129,9 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
 
     /**
      * Sets the key data for this source record.
-     * @param keyData The key data for this source record.
+     *
+     * @param keyData
+     *            The key data for this source record.
      */
     final public void setKeyData(final SchemaAndValue keyData) {
         this.keyData = keyData;
@@ -117,33 +139,35 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
 
     /**
      * Gets the key data for this source record. Makes a defensive copy.
+     *
      * @return The key data for this source record.
      */
     final public SchemaAndValue getKey() {
         return new SchemaAndValue(keyData.schema(), keyData.value());
     }
 
-
     /**
      * Sets the value data for this source record.
-     * @param valueData The key data for this source record.
+     *
+     * @param valueData
+     *            The key data for this source record.
      */
     final public void setValueData(final SchemaAndValue valueData) {
         this.valueData = valueData;
     }
 
-
     /**
      * Gets the value data for this source record. Makes a defensive copy.
+     *
      * @return The key data for this source record.
      */
     final public SchemaAndValue getValue() {
         return new SchemaAndValue(valueData.schema(), valueData.value());
     }
 
-
     /**
      * Gets the topic for the source record.
+     *
      * @return The topic for the source record.
      */
     final public String getTopic() {
@@ -152,6 +176,7 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
 
     /**
      * Gets the partition for the source record.
+     *
      * @return The partition for the source record.
      */
     final public Integer getPartition() {
@@ -160,22 +185,26 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
 
     /**
      * Sets the offset manager entry for this source record.
-     * @param offsetManagerEntry The offset manager entry for this source record.
+     *
+     * @param offsetManagerEntry
+     *            The offset manager entry for this source record.
      */
-    final public void setOffsetManagerEntry(final OME offsetManagerEntry) {
+    final public void setOffsetManagerEntry(final O offsetManagerEntry) {
         this.offsetManagerEntry = offsetManagerEntry.fromProperties(offsetManagerEntry.getProperties());
     }
 
     /**
-     * Gets the offset manager entry for this source record.  Makes a defensive copy.
+     * Gets the offset manager entry for this source record. Makes a defensive copy.
+     *
      * @return The offset manager entry for this source record.
      */
-    final public OME getOffsetManagerEntry() {
+    final public O getOffsetManagerEntry() {
         return offsetManagerEntry.fromProperties(offsetManagerEntry.getProperties()); // return a defensive copy
     }
 
     /**
-     * Gets the Context for this source record.  Makes a defensive copy.
+     * Gets the Context for this source record. Makes a defensive copy.
+     *
      * @return The Context for this source record.
      */
     final public Context<K> getContext() {
@@ -184,8 +213,10 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
     }
 
     /**
-     * Sets the Context for this source record.  Makes a defensive copy.
-     * @param context The Context for this source record.
+     * Sets the Context for this source record. Makes a defensive copy.
+     *
+     * @param context
+     *            The Context for this source record.
      */
     final public void setContext(final Context<K> context) {
         this.context = new Context<>(context) {
@@ -197,8 +228,7 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, OME exten
      *
      * @return A kafka {@link SourceRecord SourceRecord} This can return null if error tolerance is set to 'All'
      */
-    final public SourceRecord getSourceRecord(final ErrorsTolerance tolerance,
-            final OffsetManager<OME> offsetManager) {
+    final public SourceRecord getSourceRecord(final ErrorsTolerance tolerance, final OffsetManager<O> offsetManager) {
         try {
             if (getLogger().isDebugEnabled()) {
                 getLogger().debug("Source Record: {} for Topic: {} , Partition: {}, recordCount: {}", getNativeKey(),

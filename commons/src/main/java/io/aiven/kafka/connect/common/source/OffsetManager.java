@@ -246,6 +246,7 @@ public class OffsetManager<E extends OffsetManager.OffsetManagerEntry<E>> {
 
         /**
          * Gets the current record count.
+         *
          * @return The current record count.
          */
         long getRecordCount();

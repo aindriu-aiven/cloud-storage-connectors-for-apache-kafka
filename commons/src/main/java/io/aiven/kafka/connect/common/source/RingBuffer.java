@@ -50,6 +50,6 @@ public class RingBuffer<K> extends SynchronizedQueue<K> {
      * @return A value T from the last place in the list, returns null if list is not full.
      */
     public K getOldest() {
-        return ((CircularFifoQueue<K>)decorated()).isFull() ? poll() : null;
+        return ((CircularFifoQueue<K>) decorated()).isAtFullCapacity() ? poll() : null;
     }
 }
