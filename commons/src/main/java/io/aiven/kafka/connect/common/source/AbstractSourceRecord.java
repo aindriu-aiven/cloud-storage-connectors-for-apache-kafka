@@ -26,6 +26,7 @@ import io.aiven.kafka.connect.common.source.task.Context;
 
 import org.slf4j.Logger;
 
+
 /**
  * An abstract source record as retrieved from the storage layer.
  *
@@ -35,24 +36,27 @@ import org.slf4j.Logger;
  *            the key type for the native object.
  * @param <O>
  *            the OffsetManagerEntry for the iterator.
- * @param <T>
- *            the concrete implementation class for AbstractSourceRecord.
+ * @param <E>
+ *            the implementation class for AbstractSourceRecord.
  */
-public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
+public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, E extends AbstractSourceRecord<N, K, O, E>> {
+    private final Logger logger;
     private SchemaAndValue keyData;
     private SchemaAndValue valueData;
     private O offsetManagerEntry;
     private Context<K> context;
-    private final N nativeItem;
+    private final NativeInfo<N,K> nativeInfo;
+
 
     /**
      * Construct a source record from a native item.
      *
-     * @param nativeItem
+     * @param nativeInfo
      *            the native item to extract the source record from.
      */
-    public AbstractSourceRecord(final N nativeItem) {
-        this.nativeItem = nativeItem;
+    public AbstractSourceRecord(final Logger logger, final NativeInfo<N,K> nativeInfo) {
+        this.logger = logger;
+        this.nativeInfo = nativeInfo;
     }
 
     /**
@@ -61,8 +65,8 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      * @param sourceRecord
      *            the source record to copy.
      */
-    protected AbstractSourceRecord(final AbstractSourceRecord<N, K, O, T> sourceRecord) {
-        this(sourceRecord.nativeItem);
+    protected AbstractSourceRecord(final AbstractSourceRecord<N, K, O, E> sourceRecord) {
+        this(sourceRecord.logger, sourceRecord.nativeInfo);
         this.offsetManagerEntry = sourceRecord.offsetManagerEntry
                 .fromProperties(sourceRecord.getOffsetManagerEntry().getProperties());
         this.keyData = sourceRecord.keyData;
@@ -75,14 +79,14 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      *
      * @return The key for the native object.
      */
-    abstract public K getNativeKey();
+    final public K getNativeKey() { return nativeInfo.getNativeKey(); }
 
     /**
      * Gets the number of bytes in the input stream extracted from the native object.
      *
      * @return The number of bytes in the input stream extracted from the native object.
      */
-    abstract public long getNativeItemSize();
+    final public long getNativeItemSize() { return nativeInfo.getNativeItemSize(); };
 
     /**
      * Makes a duplicate of this AbstractSourceRecord. This is similar to the Java {@code clone} method but without the
@@ -90,14 +94,7 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      *
      * @return A duplicate of this AbstractSourceRecord
      */
-    abstract public T duplicate();
-
-    /**
-     * Gets the logger from the implementing class.
-     *
-     * @return The logger from the implementing class.
-     */
-    protected abstract Logger getLogger();
+    abstract public  E duplicate();
 
     /**
      * Gets the native item that this source record is working with.
@@ -105,7 +102,7 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      * @return The native item that this source record is working with.
      */
     protected N getNativeItem() {
-        return nativeItem;
+        return nativeInfo.getNativeItem();
     }
 
     /**
@@ -230,8 +227,8 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      */
     final public SourceRecord getSourceRecord(final ErrorsTolerance tolerance, final OffsetManager<O> offsetManager) {
         try {
-            if (getLogger().isDebugEnabled()) {
-                getLogger().debug("Source Record: {} for Topic: {} , Partition: {}, recordCount: {}", getNativeKey(),
+            if (logger.isDebugEnabled()) {
+                logger.debug("Source Record: {} for Topic: {} , Partition: {}, recordCount: {}", getNativeKey(),
                         getTopic(), getPartition(), getRecordCount());
             }
             offsetManager.addEntry(offsetManagerEntry);
@@ -242,11 +239,19 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
             if (ErrorsTolerance.NONE.equals(tolerance)) {
                 throw new ConnectException("Data Exception caught during record to source record transformation", e);
             } else {
-                getLogger().warn(
+                logger.warn(
                         "Data Exception caught during record to source record transformation {} . errors.tolerance set to 'all', logging warning and continuing to process.",
                         e.getMessage(), e);
                 return null;
             }
         }
+    }
+
+    public interface NativeInfo<N,K> {
+        N getNativeItem();
+
+        K getNativeKey();
+
+       long getNativeItemSize();
     }
 }

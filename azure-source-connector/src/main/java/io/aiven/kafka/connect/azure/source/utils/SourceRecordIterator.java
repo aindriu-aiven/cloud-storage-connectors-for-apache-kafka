@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 
 import io.aiven.kafka.connect.azure.source.config.AzureBlobSourceConfig;
@@ -80,13 +81,13 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected FilePatternUtils getFilePatternUtils() {
-        return new FilePatternUtils(
-                azureBlobSourceConfig.getAzureBlobFileNameFragment().getFilenameTemplate().toString());
+    protected FilePatternUtils getFilePatternUtils(final SourceCommonConfig commonConfig) {
+        AzureBlobSourceConfig azureBlobSourceConfig = (AzureBlobSourceConfig) commonConfig;
+        return new FilePatternUtils(azureBlobSourceConfig.getAzureBlobFileNameFragment().getFilenameTemplate().toString());
     }
 
     @Override
-    protected String getName(final BlobItem nativeObject) {
+    protected String getName(BlobItem nativeObject) {
         return nativeObject.getName();
     }
 
