@@ -28,26 +28,27 @@ public class AzureBlobSourceRecord
     private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobSourceRecord.class);
 
     public AzureBlobSourceRecord(final BlobItem blobItem) {
-        super(blobItem);
+        super(LOGGER, new NativeInfo<BlobItem, String>() {
+
+            @Override
+            public BlobItem getNativeItem() {
+                return blobItem;
+            }
+
+            @Override
+            public String getNativeKey() {
+                return blobItem.getName();
+            }
+
+            @Override
+            public long getNativeItemSize() {
+                return blobItem.getProperties().getContentLength();
+            }
+        });
     }
 
-    public AzureBlobSourceRecord(final AzureBlobSourceRecord azureBlobSourceRecord) {
+    private AzureBlobSourceRecord(final AzureBlobSourceRecord azureBlobSourceRecord) {
         super(azureBlobSourceRecord);
-    }
-
-    @Override
-    protected Logger getLogger() {
-        return LOGGER;
-    }
-
-    @Override
-    public String getNativeKey() {
-        return getNativeItem().getName();
-    }
-
-    @Override
-    public long getNativeItemSize() {
-        return getNativeItem().getProperties().getContentLength();
     }
 
     @Override

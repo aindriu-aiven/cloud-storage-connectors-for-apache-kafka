@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
@@ -44,7 +45,7 @@ public final class SourceRecordIterator
     // private final OffsetManager<S3OffsetManagerEntry> offsetManager;
     //
     /** The configuration for this S3 source */
-    private final S3SourceConfig s3SourceConfig;
+    //private final S3SourceConfig s3SourceConfig;
     // /** The transformer for the data conversions */
     // private final Transformer transformer;
     /** The AWS client that provides the S3Objects */
@@ -90,7 +91,7 @@ public final class SourceRecordIterator
             final AWSV2SourceClient sourceClient) {
 
         super(s3SourceConfig, offsetManager, transformer, s3SourceConfig.getS3FetchBufferSize());
-        this.s3SourceConfig = s3SourceConfig;
+        //this.s3SourceConfig = s3SourceConfig;
         // this.offsetManager = offsetManager;
         this.bucket = s3SourceConfig.getAwsS3BucketName();
         // this.transformer = transformer;
@@ -121,8 +122,9 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected FilePatternUtils getFilePatternUtils() {
-        return new FilePatternUtils(s3SourceConfig.getS3FileNameFragment().getFilenameTemplate().toString());
+    protected FilePatternUtils getFilePatternUtils(SourceCommonConfig SourceConfig) {
+        S3SourceConfig s3SourceConfig = (S3SourceConfig) SourceConfig;
+        return new FilePatternUtils(s3SourceConfig.getFilenameTemplate().toString());
     }
 
     @Override

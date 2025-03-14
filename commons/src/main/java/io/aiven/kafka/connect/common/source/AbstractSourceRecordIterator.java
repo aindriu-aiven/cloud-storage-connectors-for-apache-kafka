@@ -99,14 +99,20 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
     public AbstractSourceRecordIterator(final SourceCommonConfig sourceConfig, final OffsetManager<O> offsetManager,
             final Transformer transformer, final int bufferSize) {
         super();
+
+        final DistributionType distributionType = sourceConfig.getDistributionType();
+        final int maxTasks = sourceConfig.getMaxTasks();
+
         this.sourceConfig = sourceConfig;
         this.offsetManager = offsetManager;
         this.transformer = transformer;
         this.targetTopics = Optional.ofNullable(sourceConfig.getTargetTopic());
-        this.taskAssignment = new TaskAssignment(initializeDistributionStrategy());
+        this.taskId = sourceConfig.getTaskId() % maxTasks;
+        this.filePattern = getFilePatternUtils(sourceConfig);
+        this.taskAssignment = new TaskAssignment(distributionType.getDistributionStrategy(maxTasks));
         this.taskId = sourceConfig.getTaskId();
         this.fileMatching = new FileMatching(filePattern);
-        this.inner = getSourceRecordStream(null).iterator();
+        this.inner = Collections.emptyIterator();
         this.outer = Collections.emptyIterator();
         this.ringBuffer = new RingBuffer<>(Math.max(1, bufferSize));
     }
@@ -117,7 +123,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
     abstract protected IOSupplier<InputStream> getInputStream(T sourceRecord);
 
-    abstract protected FilePatternUtils getFilePatternUtils();
+    abstract protected FilePatternUtils getFilePatternUtils(final SourceCommonConfig sourceConfig);
 
     abstract protected K getName(N nativeObject);
     abstract protected T createSourceRecord(N nativeObject);
@@ -183,7 +189,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
         final DistributionType distributionType = sourceConfig.getDistributionType();
         final int maxTasks = sourceConfig.getMaxTasks();
         this.taskId = sourceConfig.getTaskId() % maxTasks;
-        this.filePattern = getFilePatternUtils();
+        this.filePattern = getFilePatternUtils(sourceConfig);
         return distributionType.getDistributionStrategy(maxTasks);
     }
 
@@ -241,13 +247,7 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         @Override
         public boolean test(final Optional<T> sourceRecord) {
-            if (sourceRecord.isPresent()) {
-                final T record = sourceRecord.get();
-                final Context<K> context = record.getContext();
-                return taskId == distributionStrategy.getTaskFor(context);
-
-            }
-            return false;
+            return sourceRecord.filter(t -> taskId == distributionStrategy.getTaskFor(t.getContext())).isPresent();
         }
     }
 

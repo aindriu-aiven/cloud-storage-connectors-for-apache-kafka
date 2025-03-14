@@ -271,27 +271,27 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
 
 
-//        @ParameterizedTest
-//        @CsvSource({ "4, 0", "4, 1", "4, 2", "4, 3" })
-//        void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdAssigned(final int maxTasks, final int taskId) {
-//
-//            Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-//            final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
-//            when(config.getTransformerMaxBufferSize()).thenReturn(4096);
-//            when(config.getInputFormat()).thenReturn(InputFormat.BYTES);
-//            AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager, transformer);
-//
-//
-//
-//
-//            final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
-//                    sourceApiClient);
-//
-//            final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
-//                    .test(iterator.fileMatching.apply(s3Object));
-//            assertThat(s3ObjectPredicate).accepts(obj);
-//
-//        }
+        @ParameterizedTest
+        @CsvSource({ "4, 0", "4, 1", "4, 2", "4, 3" })
+        void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdAssigned(final int maxTasks, final int taskId) {
+
+            Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
+            final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
+            when(config.getTransformerMaxBufferSize()).thenReturn(4096);
+            when(config.getInputFormat()).thenReturn(InputFormat.BYTES);
+            AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager, transformer);
+
+
+
+
+            final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
+                    sourceApiClient);
+
+            final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
+                    .test(iterator.fileMatching.apply(s3Object));
+            assertThat(s3ObjectPredicate).accepts(obj);
+
+        }
 //
 ////    @ParameterizedTest
 ////    @CsvSource({ "4, 1, topic1-2-0", "4, 3,key1", "4, 0, key1", "4, 1, key2", "4, 2, key2", "4, 0, key2", "4, 1,key3",
