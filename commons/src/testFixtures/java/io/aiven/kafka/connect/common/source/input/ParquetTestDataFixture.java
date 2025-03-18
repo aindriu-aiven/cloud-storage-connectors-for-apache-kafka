@@ -18,9 +18,17 @@ import java.util.List;
 
 import static org.apache.kafka.connect.data.Schema.STRING_SCHEMA;
 
+/**
+ * A testing feature to generate Parquet data.
+ */
 public class ParquetTestDataFixture {
-
-
+    /**
+     * Generate the specified number of parquet records in a byte array.
+     * @param name the name to be used in each object.  Each object will have a "name" property with the value of {@code name} followed by the record number.
+     * @param numOfRecords The number of records to generate.
+     * @return  A byte array containing the specified number of parquet records.
+     * @throws IOException if the data can not be written.
+     */
     public static byte[] generateMockParquetData(final String name, final int numOfRecords)
             throws IOException {
         Schema schema = ParquetTestingFixture.testSchema();

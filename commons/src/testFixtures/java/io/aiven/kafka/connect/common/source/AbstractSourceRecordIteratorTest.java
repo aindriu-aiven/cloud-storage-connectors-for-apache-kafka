@@ -16,10 +16,7 @@
 
 package io.aiven.kafka.connect.common.source;
 
-import io.aiven.kafka.connect.common.config.FileNameFragment;
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
-import io.aiven.kafka.connect.common.config.SourceConfigFragment;
-import io.aiven.kafka.connect.common.config.TransformerFragment;
 import io.aiven.kafka.connect.common.source.input.AvroTestDataFixture;
 import io.aiven.kafka.connect.common.source.input.InputFormat;
 import io.aiven.kafka.connect.common.source.input.JsonTestDataFixture;
@@ -29,12 +26,10 @@ import io.aiven.kafka.connect.common.source.input.TransformerFactory;
 import io.aiven.kafka.connect.common.source.task.DistributionType;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.kafka.common.config.ConfigDef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
@@ -49,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.stream.Stream;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,20 +51,66 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("PMD.ExcessiveImports")
+/**
+ * A testing fixture that tests an {@link AbstractSourceRecordIterator} implementation.
+ * @param <N> The Native object type.
+ * @param <K> The native key type.
+ * @param <O> The OffsetManagerEntry type.
+ * @param <T> The concrete implementation of the {@link AbstractSourceRecord}     .
+ */
 public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
-
-
+    /** The offset manager */
     private OffsetManager<O> mockOffsetManager;
+    /** The key based on the file name*/
     private K key;
+    /** The file name for testing */
     private final String fileName = "topic-00001-1741965423180.txt";
+    /** The file pattern for the file name */
     private final String filePattern = "{{topic}}-{{partition}}-{{start_offset}}";
 
+    // The abstract methods that must be implemented
+
+    /**
+     *  Convert a string into the key value for the native object.  In most cases the underlying system uses a string so returning the {@code key} argument is appropriate.  However, this method
+     *  provides an opportunity to convert the key into something that the native system would produce.
+     * @param key the key value as a string.
+     * @return the native key equivalent of the {@code key} parameter.
+     */
     abstract protected K createKFrom(String key);
-    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(SourceCommonConfig mockConfig, OffsetManager<O> mockOffsetManager, Transformer mockTransformer);
+
+    /**
+     * Create the instance of the source record iterator to be tested.
+     * @param mockConfig A mock configuration returned by {@link #createMockedConfig(String)} with additional values added.
+     * @param mockOffsetManager A mock offset manager.
+     * @param transformer The trnasformer to use for the test.
+     * @return A configured AbstractSourceRecordIterator.
+     */
+    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(SourceCommonConfig mockConfig, OffsetManager<O> mockOffsetManager, Transformer transformer);
+
+    /**
+     * Create a client mutator that will add testing data to the iterator under test.
+     * @return A client mutator that will add testing data to the iterator under test.
+     */
     abstract protected ClientMutator<N, K, ?> createClientMutator();
+
+    /**
+     * Create a mock instance of SourceCommonConfig that is appropriate for the iterator under test.
+     * @param filePattern The file pattern to match when reading from the native system.
+     * @return A mock instance of SourceCommonConfig that is appropriate for the iterator under test.
+     */
     abstract protected SourceCommonConfig createMockedConfig(final String filePattern);
-    abstract protected ConfigDef getConfigDef();
+
+//    /**
+//     * Creates the ConfigDef that is required for the iterator under test.
+//     * @return The ConfigDef that is required for the iterator under test.
+//     */
+//    abstract protected ConfigDef getConfigDef();
+
+
+    /**
+     * Creates a concrete instance of SourceCommonConfig that is appropriate for the iterator under test.
+     * @param data The data map for the instance.
+     */
     abstract protected SourceCommonConfig createConfig(final Map<String, String> data);
 
     @BeforeEach
@@ -79,7 +119,14 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         key = createKFrom(fileName);
     }
 
-
+    /**
+     * Create a mock SourceCOnfig with our necessary items added.
+     * @param filePattern The file pattern to match.
+     * @param taskId the task ID for the config.
+     * @param maxTasks The maximum tasks for the config.
+     * @param targetTopic the topic for the config.
+     * @return A mock SourceCommonConfig that contains the necessary data for the iterator under test.
+     */
     private SourceCommonConfig mockSourceConfig(final String filePattern, final int taskId, final int maxTasks,final String targetTopic ){
         SourceCommonConfig mockConfig = createMockedConfig(filePattern);
         when(mockConfig.getDistributionType()).thenReturn(DistributionType.OBJECT_HASH);
@@ -90,25 +137,25 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         return mockConfig;
     }
 
-    private SourceCommonConfig realSourceConfig(final String filePattern, final int taskId, final int maxTasks,final String targetTopic ) {
-        Map<String, String> data = new HashMap<>();
-
-        data.put(SourceCommonConfig.TASK_ID, Integer.toString(taskId));
-        data.put(SourceCommonConfig.MAX_TASKS, Integer.toString(maxTasks));
-
-        SourceConfigFragment.Setter sourceSetter = new SourceConfigFragment.Setter(data);
-        sourceSetter.setDistributionType(DistributionType.OBJECT_HASH);
-        sourceSetter.setTargetTopic(targetTopic);
-
-        FileNameFragment.Setter fileNameSetter = new FileNameFragment.Setter(data);
-        fileNameSetter.setFilenameTemplate(filePattern);
-
-        TransformerFragment.Setter transformerSetter = new TransformerFragment.Setter(data);
-        transformerSetter.setTransformerMaxBufferSize(4096);
-
-        return createConfig(data);
-
-    }
+//    private SourceCommonConfig realSourceConfig(final String filePattern, final int taskId, final int maxTasks,final String targetTopic ) {
+//        Map<String, String> data = new HashMap<>();
+//
+//        data.put(SourceCommonConfig.TASK_ID, Integer.toString(taskId));
+//        data.put(SourceCommonConfig.MAX_TASKS, Integer.toString(maxTasks));
+//
+//        SourceConfigFragment.Setter sourceSetter = new SourceConfigFragment.Setter(data);
+//        sourceSetter.setDistributionType(DistributionType.OBJECT_HASH);
+//        sourceSetter.setTargetTopic(targetTopic);
+//
+//        FileNameFragment.Setter fileNameSetter = new FileNameFragment.Setter(data);
+//        fileNameSetter.setFilenameTemplate(filePattern);
+//
+//        TransformerFragment.Setter transformerSetter = new TransformerFragment.Setter(data);
+//        transformerSetter.setTransformerMaxBufferSize(4096);
+//
+//        return createConfig(data);
+//
+//    }
 
     @ParameterizedTest(name="{index} {0}")
     @MethodSource("inputFormatList")
@@ -154,6 +201,12 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     }
 
 
+    /**
+     * Generates the data for the parameterized tests.
+     * Creates iterator for each of the {@link InputFormat} types.
+     * @return the data for the parameterized tests.
+     * @throws IOException on data creation error.
+     */
     static List<Arguments> inputFormatList() throws IOException {
         List<Arguments> result = new ArrayList<>();
         byte[] bytes;
@@ -204,6 +257,12 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         assertThat(iterator).isExhausted();
     }
 
+    /**
+     * Generates the data for the parameterized tests requiring more than one record.
+     * Creates iterator for each of the {@link InputFormat} types.
+     * @return the data for the parameterized tests.
+     * @throws IOException on data creation error.
+     */
     static List<Arguments> multiInputFormatList() throws IOException {
         List<Arguments> result = new ArrayList<>();
         byte[] bytes;
@@ -234,7 +293,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     /**
      * This test sends 6000 bytes to a ByteArrayTransformer that only returns 4096 byte blocks, so this test
      * should return 2 results.
-     * @throws Exception
+     * @throws Exception if data can not be created.
      */
     @Test
     void testIteratorProcessesMultipleObjectsFromByteArrayTransformer() throws Exception {
@@ -270,73 +329,98 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     }
 
 
-
-//        @ParameterizedTest
-//        @CsvSource({ "4, 0", "4, 1", "4, 2", "4, 3" })
-//        void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdAssigned(final int maxTasks, final int taskId) {
-//
-//            Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-//            final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
-//            when(config.getTransformerMaxBufferSize()).thenReturn(4096);
-//            when(config.getInputFormat()).thenReturn(InputFormat.BYTES);
-//            AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager, transformer);
-//
-//
-//
-//
-//            final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
-//                    sourceApiClient);
-//
-//            final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
-//                    .test(iterator.fileMatching.apply(s3Object));
-//            assertThat(s3ObjectPredicate).accepts(obj);
-//
-//        }
-//
-////    @ParameterizedTest
-////    @CsvSource({ "4, 1, topic1-2-0", "4, 3,key1", "4, 0, key1", "4, 1, key2", "4, 2, key2", "4, 0, key2", "4, 1,key3",
-////            "4, 2, key3", "4, 3, key3", "4, 0, key4", "4, 2, key4", "4, 3, key4" })
-////    void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdUnassigned(final int maxTasks, final int taskId,
-////            final String objectKey) {
-////        mockTransformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-////        final String filePattern = "{{partition}}";
-////        final String topic = "topic";
-////        mockSourceConfig(mockConfig, filePattern, taskId, maxTasks, topic);
-////        final S3Object obj = S3Object.builder().key(objectKey).build();
-////        sourceApiClient = mock(AWSV2SourceClient.class);
-////
-////        final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
-////                sourceApiClient);
-////        final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
-////                .test(iterator.fileMatching.apply(s3Object));
-////        // Assert
-////        assertThat(s3ObjectPredicate.test(obj)).as("Predicate should accept the objectKey: " + objectKey).isFalse();
-////    }
-
-
     /**
+     * A mutator of the mocked client used by the iterator under test.
+     * <p>
+     *     Most client implementations return a list of objects that are available, often with paging.  They also are able to detect
+     *     new data stored on the system while the iterator is running.  This framework allows us to test the interaction of the iterator
+     *     with the client.
+     * </p>
+     * <p>
+     *     The data is stored in blocks.  A block is the data returned from a single query to the client.  A block comprises zero or more
+     *     native objects.  Testing code adds native objects to the mutator.  When {@link #build} or {@link #endOfBlock} is called the current objects and
+     *     associated data are added to the block queue.
+     * </p>
+     * <p>
+     *     A standard usage pattern for the ClientMutator is:
+     *     </p>
+     *     <ul>
+     *         <li>create a Mutator</li>
+     *         <li>add 3 objects</li>
+     *         <li>mark end of block</li>
+     *         <li>mark end of block again</li>
+     *         <li>add 2 object</li>
+     *         <li>call {@link #build}</li>
+     *     </ul>
+     *     <p> this will result in an iterator that does the following:</p>
+     *     <ul>
+     *         <li>returns {@code true} to {@code hasNext}</li>
+     *         <li>returns the 3 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
+     *         <li>returns {@code false} to {@code hasNext} again</li>
+     *         <li>returns {@code true} to {@code hasNext}</li>
+     *         <li>returns the 2 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
+     *         <li>returns {@code false} to {@code hasNext} thereafter</li>
+     *     </ul>
+     * </p>
+     * <p>For an example see the SourceRecordIteratorTest in the  s3-source-connector.</p>
      *
-     * @param <N> The native object type
-     * @param <K> the key
+     * @param <N> The native object type the native object type.
+     * @param <K> the key the native key.
      * @param <T> the concrete Mutator class.
+     *
      */
     abstract public static class ClientMutator<N, K extends Comparable<K>, T extends ClientMutator<N,K,T>> {
+        /**
+         * A queue of  native objects and associated data.
+         */
         protected Queue<Pair<List<N>, Map<K, ByteBuffer>>> blocks = new LinkedList<>();
+        /**
+         * The a list of native objects found in a single block.
+         */
         protected List<N> objects = new ArrayList<>();
+        /**
+         * The map of object keys to data.
+         */
         private Map<K, ByteBuffer> data = new HashMap<>();
+
+        /***
+         * A way to return this ClientMutator without defaulting to more primitive type.
+         */
         protected T self;
 
+        /**
+         * Constructor.
+         */
         protected ClientMutator() {
             self = (T) this;
         }
 
+        /**
+         * Create an object of type N.  May be a mock object.
+         * @param key the Key for the object.
+         * @param data the data to associate with the object.
+         * @return An object of type N.
+         */
         abstract protected N createObject(final K key, final ByteBuffer data);
 
+        /**
+         * Extracts the blocks from the mutator and creates a client that will return the blocks in order on calls to the methods to get
+         * the available record information.  The client should be implemented in the concrete test class and need not be exposed here.
+         */
+        abstract public void build();
+
+        /**
+         * Gets the data for the specified key from the data map.
+         * @param key the key to retrieve.
+         * @return the data associated with the key or {@code null}.
+         */
         protected ByteBuffer getData(final K key) {
             return data.get(key);
         }
 
-
+        /**
+         * Dequeue a block of data.
+         */
         protected void dequeueBlock() {
             if (blocks.isEmpty()) {
                 reset();
@@ -346,54 +430,46 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
                 data = pair.getRight();
             }
         }
+
+        /**
+         * Adds an object to the block.
+         * @param key the key for the native object.
+         * @param data the data for the native object.  String is converted to bytes using UTF-8 encoding.
+         * @return this.
+         */
         final public T addObject(final K key, final String data) {
             return addObject(key, ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)));
         }
 
+        /**
+         * Adds an object to the block.
+         * @param key the key for the native object.
+         * @param data the data for the native object.
+         * @return this.
+         */
         final public T addObject(final K key, final ByteBuffer data) {
             objects.add(createObject(key, data));
             this.data.put(key, data);
             return self;
         }
 
+        /**
+         * Mark the end of a block and the start of a new one.
+         * @return this.
+         */
         final public T endOfBlock() {
             blocks.add(Pair.of(objects, data));
             return reset();
         }
 
+        /**
+         * reset the objects and data to their empty state.  Does not remove already generated blocks.
+         * @return this.
+         */
         final public T reset() {
             objects = new ArrayList<>();
             data = new HashMap<>();
             return self;
         }
-
-//        private ResponseBytes getResponse(final String key) {
-//            return ResponseBytes.fromByteArray(new byte[0], data.get(key));
-//        }
-//
-//        private ListObjectsV2Response dequeueData() {
-//            if (blocks.isEmpty()) {
-//                objects = Collections.emptyList();
-//                data = Collections.emptyMap();
-//            } else {
-//                final Pair<List<S3Object>, Map<String, byte[]>> pair = blocks.remove();
-//                objects = pair.getLeft();
-//                data = pair.getRight();
-//            }
-//            return ListObjectsV2Response.builder().contents(objects).isTruncated(false).build();
-//        }
-
-        abstract public void build();
-        //{
-//            if (!objects.isEmpty()) {
-//                endOfBlock();
-//            }
-//            final S3Client result = mock(S3Client.class);
-//            when(result.listObjectsV2(any(ListObjectsV2Request.class))).thenAnswer(env -> dequeueData());
-//            when(result.listObjectsV2(any(Consumer.class))).thenAnswer(env -> dequeueData());
-//            when(result.getObjectAsBytes(any(GetObjectRequest.class)))
-//                    .thenAnswer(env -> getResponse(env.getArgument(0, GetObjectRequest.class).key()));
-//            return result;
-      //  }
     }
 }

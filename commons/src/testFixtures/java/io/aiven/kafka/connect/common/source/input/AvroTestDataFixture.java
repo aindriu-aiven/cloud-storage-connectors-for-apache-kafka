@@ -12,7 +12,16 @@ import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumWriter;
 
+/**
+ * A testing fixture to generate Avro test data.
+ */
 public final class AvroTestDataFixture {
+    /**
+     * Generates a byte array containing the specified number of records.
+     * @param numRecs the numer of records to generate
+     * @return A byte array containing the specified number of records.
+     * @throws IOException if the Avro records can not be generated.
+     */
     public static byte[] generateMockAvroData(final int numRecs) throws IOException {
         final String schemaJson = "{\n" + "  \"type\": \"record\",\n" + "  \"name\": \"TestRecord\",\n"
                 + "  \"fields\": [\n" + "    {\"name\": \"message\", \"type\": \"string\"},\n"
@@ -23,6 +32,13 @@ public final class AvroTestDataFixture {
         return getAvroRecords(schema, numRecs);
     }
 
+    /**
+     * creates and serialzes the specified number of records with the specified schema.
+     * @param schema the schema to serialize with.
+     * @param numOfRecs the number of records to write.
+     * @return  A byte array containing the specified number of records.
+     * @throws IOException if the Avro records can not be generated.
+     */
     private static byte[] getAvroRecords(final Schema schema, final int numOfRecs) throws IOException {
         // Create Avro records
         final List<GenericRecord> avroRecords = new ArrayList<>();

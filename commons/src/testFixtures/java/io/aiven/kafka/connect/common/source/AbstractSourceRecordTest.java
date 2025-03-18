@@ -32,15 +32,40 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Tests an AbstractSourceRecord implementation.
+ * @param <N> The Native object type.
+ * @param <K> The native key type.
+ * @param <O> The OffsetManagerEntry type.
+ * @param <T> The concrete implementation of the {@link AbstractSourceRecord}     .
+ */
 public abstract class AbstractSourceRecordTest<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
 
     public static final String TEST_OBJECT_KEY_TXT = "test-object-key.txt";
 
+    // abstract methods
+
+    /**
+     *  Convert a string into the key value for the native object.  In most cases the underlying system uses a string so returning the {@code key} argument is appropriate.  However, this method
+     *  provides an opportunity to convert the key into something that the native system would produce.
+     * @param key the key value as a string.
+     * @return the native key equivalent of the {@code key} parameter.
+     */
     abstract protected K createKFrom(String key);
 
+    /**
+     * Create an offset manager entry from the string key value,
+     * @param key the key value as a string.
+     * @return an OffsetManager entry.
+     */
     abstract protected O createOffsetManagerEntry(String key);
 
+    /**
+     * Creates the source record under test.
+     * @return the source record under test.
+     */
     abstract protected T createSourceRecord();
+
 
     @Test
     void testCreateSourceRecord() {
