@@ -25,6 +25,7 @@ import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.common.source.input.TransformerFactory;
 import io.aiven.kafka.connect.common.source.task.DistributionType;
 
+import io.aiven.kafka.connect.common.templating.Template;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,16 +77,16 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
      * @param key the key value as a string.
      * @return the native key equivalent of the {@code key} parameter.
      */
-    abstract protected K createKFrom(String key);
+    abstract protected K createKFrom(final String key);
 
     /**
      * Create the instance of the source record iterator to be tested.
-     * @param mockConfig A mock configuration returned by {@link #createMockedConfig(String)} with additional values added.
+     * @param mockConfig A mock configuration returned by {@link #createMockedConfig()} with additional values added.
      * @param mockOffsetManager A mock offset manager.
      * @param transformer The trnasformer to use for the test.
      * @return A configured AbstractSourceRecordIterator.
      */
-    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(SourceCommonConfig mockConfig, OffsetManager<O> mockOffsetManager, Transformer transformer);
+    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(final SourceCommonConfig mockConfig, final OffsetManager<O> mockOffsetManager, final Transformer transformer);
 
     /**
      * Create a client mutator that will add testing data to the iterator under test.
@@ -95,23 +96,11 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
     /**
      * Create a mock instance of SourceCommonConfig that is appropriate for the iterator under test.
-     * @param filePattern The file pattern to match when reading from the native system.
      * @return A mock instance of SourceCommonConfig that is appropriate for the iterator under test.
      */
-    abstract protected SourceCommonConfig createMockedConfig(final String filePattern);
+    abstract protected SourceCommonConfig createMockedConfig();
 
-//    /**
-//     * Creates the ConfigDef that is required for the iterator under test.
-//     * @return The ConfigDef that is required for the iterator under test.
-//     */
-//    abstract protected ConfigDef getConfigDef();
-
-
-    /**
-     * Creates a concrete instance of SourceCommonConfig that is appropriate for the iterator under test.
-     * @param data The data map for the instance.
-     */
-    abstract protected SourceCommonConfig createConfig(final Map<String, String> data);
+    // concrete methods.
 
     @BeforeEach
     public void setUp() {
@@ -127,39 +116,20 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
      * @param targetTopic the topic for the config.
      * @return A mock SourceCommonConfig that contains the necessary data for the iterator under test.
      */
-    private SourceCommonConfig mockSourceConfig(final String filePattern, final int taskId, final int maxTasks,final String targetTopic ){
-        SourceCommonConfig mockConfig = createMockedConfig(filePattern);
+    protected SourceCommonConfig mockSourceConfig(final String filePattern, final int taskId, final int maxTasks, final String targetTopic){
+        SourceCommonConfig mockConfig = createMockedConfig();
         when(mockConfig.getDistributionType()).thenReturn(DistributionType.OBJECT_HASH);
         when(mockConfig.getTaskId()).thenReturn(taskId);
         when(mockConfig.getMaxTasks()).thenReturn(maxTasks);
         when(mockConfig.getTargetTopic()).thenReturn(targetTopic);
         when(mockConfig.getTransformerMaxBufferSize()).thenReturn(4096);
+        when(mockConfig.getFilenameTemplate()).thenReturn(Template.of(filePattern));
         return mockConfig;
     }
 
-//    private SourceCommonConfig realSourceConfig(final String filePattern, final int taskId, final int maxTasks,final String targetTopic ) {
-//        Map<String, String> data = new HashMap<>();
-//
-//        data.put(SourceCommonConfig.TASK_ID, Integer.toString(taskId));
-//        data.put(SourceCommonConfig.MAX_TASKS, Integer.toString(maxTasks));
-//
-//        SourceConfigFragment.Setter sourceSetter = new SourceConfigFragment.Setter(data);
-//        sourceSetter.setDistributionType(DistributionType.OBJECT_HASH);
-//        sourceSetter.setTargetTopic(targetTopic);
-//
-//        FileNameFragment.Setter fileNameSetter = new FileNameFragment.Setter(data);
-//        fileNameSetter.setFilenameTemplate(filePattern);
-//
-//        TransformerFragment.Setter transformerSetter = new TransformerFragment.Setter(data);
-//        transformerSetter.setTransformerMaxBufferSize(4096);
-//
-//        return createConfig(data);
-//
-//    }
-
     @ParameterizedTest(name="{index} {0}")
     @MethodSource("inputFormatList")
-    void testEmptyClientReturnsEmptyIterator(InputFormat format, byte[] ignore) throws Exception {
+    void testEmptyClientReturnsEmptyIterator(final InputFormat format, final byte[] ignore) throws Exception {
         Transformer transformer = TransformerFactory.getTransformer(format);
 
         SourceCommonConfig mockConfig = mockSourceConfig(filePattern, 0, 1, null);
@@ -174,7 +144,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
     @ParameterizedTest(name="{index} {0}")
     @MethodSource("inputFormatList")
-    void testOneObjectReturnsOneObject(InputFormat format, byte[] data) throws Exception {
+    void testOneObjectReturnsOneObject(final InputFormat format, final byte[] data) throws Exception {
         Transformer transformer = TransformerFactory.getTransformer(format);
         SourceCommonConfig mockConfig = mockSourceConfig(filePattern, 0, 1, null);
         when(mockConfig.getInputFormat()).thenReturn(format);
@@ -235,7 +205,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
     @ParameterizedTest(name="{index} {0}")
     @MethodSource("multiInputFormatList")
-    void testMultipleRecordsReturned(InputFormat format, byte[] data) throws Exception {
+    void testMultipleRecordsReturned(final InputFormat format, final byte[] data) throws Exception {
         createClientMutator().reset().addObject(key, ByteBuffer.wrap(data)).endOfBlock().build();
         Transformer transformer = TransformerFactory.getTransformer(format);
         final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
@@ -414,14 +384,14 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
          * @param key the key to retrieve.
          * @return the data associated with the key or {@code null}.
          */
-        protected ByteBuffer getData(final K key) {
+        final protected ByteBuffer getData(final K key) {
             return data.get(key);
         }
 
         /**
          * Dequeue a block of data.
          */
-        protected void dequeueBlock() {
+        final protected void dequeueBlock() {
             if (blocks.isEmpty()) {
                 reset();
             } else {

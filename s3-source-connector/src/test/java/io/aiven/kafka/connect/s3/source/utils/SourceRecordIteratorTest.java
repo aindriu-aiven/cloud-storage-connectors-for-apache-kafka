@@ -25,13 +25,11 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import io.aiven.kafka.connect.common.config.FileNameFragment;
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIteratorTest;
 import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
-import io.aiven.kafka.connect.common.templating.Template;
 import io.aiven.kafka.connect.s3.source.config.S3SourceConfig;
 
 import software.amazon.awssdk.core.ResponseBytes;
@@ -45,16 +43,13 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * An implementation of the SourceRecordIteratorTest.
  */
 final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
-    /** the client */
-    private AWSV2SourceClient sourceApiClient;
-    /** tA client builder */
-    private S3ClientBuilder s3ClientBuilder;
+
     /** The client that we build the iterator from */
     private S3Client s3Client;
 
     @Override
     protected String createKFrom(final String key) {
-        // native Ky is a string so just rturn the arg.
+        // native Key is a string so just return the arg.
         return key;
     }
 
@@ -67,70 +62,18 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
     @Override
     protected ClientMutator<S3Object, String, S3ClientBuilder> createClientMutator() {
         // create our ClientMutator instance.
-        return  new S3ClientBuilder();
+        return new S3ClientBuilder();
     }
 
     @Override
-    protected SourceCommonConfig createMockedConfig(final String filePattern) {
+    protected SourceCommonConfig createMockedConfig() {
         // create a mocked config with the values required by the S3CSourceConfig
-        FileNameFragment mockFileNameFrag = mock(FileNameFragment.class);
         S3SourceConfig s3SourceConfig = mock(S3SourceConfig.class);
-        when(mockFileNameFrag.getFilenameTemplate()).thenReturn(Template.of(filePattern));
-        when(s3SourceConfig.getFilenameTemplate()).thenReturn(Template.of(filePattern));
         when(s3SourceConfig.getS3FetchBufferSize()).thenReturn(1);
         when(s3SourceConfig.getAwsS3BucketName()).thenReturn("testBucket");
         when(s3SourceConfig.getFetchPageSize()).thenReturn(10);
         return s3SourceConfig;
     }
-
-    @Override
-    protected SourceCommonConfig createConfig(final Map<String, String> data) {
-        // create an instance of the S3SourceCOnfig.
-        data.put(AWS_S3_BUCKET_NAME_CONFIG, "bucket-name");
-        return new S3SourceConfig(data);
-    }
-
-////    @ParameterizedTest
-////    @CsvSource({ "4, 2, key1", "4, 3, key2", "4, 0, key3", "4, 1, key4" })
-////    void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdAssigned(final int maxTasks, final int taskId,
-////            final String objectKey) {
-////
-////        mockTransformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-////        final String filePattern = "{{partition}}";
-////        final String topic = "topic";
-////        mockSourceConfig(mockConfig, filePattern, taskId, maxTasks, topic);
-////        final S3Object obj = S3Object.builder().key(objectKey).build();
-////        sourceApiClient = mock(AWSV2SourceClient.class);
-////
-////        final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
-////                sourceApiClient);
-////
-////        final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
-////                .test(iterator.fileMatching.apply(s3Object));
-////        assertThat(s3ObjectPredicate).accepts(obj);
-////
-////    }
-//
-////    @ParameterizedTest
-////    @CsvSource({ "4, 1, topic1-2-0", "4, 3,key1", "4, 0, key1", "4, 1, key2", "4, 2, key2", "4, 0, key2", "4, 1,key3",
-////            "4, 2, key3", "4, 3, key3", "4, 0, key4", "4, 2, key4", "4, 3, key4" })
-////    void testFetchObjectSummariesWithOneNonZeroByteObjectWithTaskIdUnassigned(final int maxTasks, final int taskId,
-////            final String objectKey) {
-////        mockTransformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-////        final String filePattern = "{{partition}}";
-////        final String topic = "topic";
-////        mockSourceConfig(mockConfig, filePattern, taskId, maxTasks, topic);
-////        final S3Object obj = S3Object.builder().key(objectKey).build();
-////        sourceApiClient = mock(AWSV2SourceClient.class);
-////
-////        final SourceRecordIterator iterator = new SourceRecordIterator(mockConfig, mockOffsetManager, mockTransformer,
-////                sourceApiClient);
-////        final Predicate<S3Object> s3ObjectPredicate = s3Object -> iterator.taskAssignment
-////                .test(iterator.fileMatching.apply(s3Object));
-////        // Assert
-////        assertThat(s3ObjectPredicate.test(obj)).as("Predicate should accept the objectKey: " + objectKey).isFalse();
-////    }
-
 
     /**
      * The mutator implementation.
@@ -148,7 +91,7 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
          * @param key the key to build the response for.
          * @return the ResponseBytes object for the key.
          */
-        private ResponseBytes getResponse(final String key) {
+        private ResponseBytes<byte[]> getResponse(final String key) {
             return ResponseBytes.fromByteArray(new byte[0], getData(key).array());
         }
 

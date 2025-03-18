@@ -26,7 +26,6 @@ import io.aiven.kafka.connect.common.source.task.Context;
 
 import org.slf4j.Logger;
 
-
 /**
  * An abstract source record as retrieved from the storage layer.
  *
@@ -108,7 +107,7 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      *
      * @return The native item that this source record is working with.
      */
-    protected N getNativeItem() {
+    final public  N getNativeItem() {
         return nativeInfo.getNativeItem();
     }
 

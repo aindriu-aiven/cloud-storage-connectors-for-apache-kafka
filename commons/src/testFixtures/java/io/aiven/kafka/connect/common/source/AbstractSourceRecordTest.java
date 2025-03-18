@@ -16,7 +16,6 @@
 
 package io.aiven.kafka.connect.common.source;
 
-
 import io.aiven.kafka.connect.common.config.enums.ErrorsTolerance;
 import io.aiven.kafka.connect.common.source.task.Context;
 
@@ -51,14 +50,14 @@ public abstract class AbstractSourceRecordTest<N, K extends Comparable<K>, O ext
      * @param key the key value as a string.
      * @return the native key equivalent of the {@code key} parameter.
      */
-    abstract protected K createKFrom(String key);
+    abstract protected K createKFrom(final String key);
 
     /**
      * Create an offset manager entry from the string key value,
      * @param key the key value as a string.
      * @return an OffsetManager entry.
      */
-    abstract protected O createOffsetManagerEntry(String key);
+    abstract protected O createOffsetManagerEntry(final String key);
 
     /**
      * Creates the source record under test.

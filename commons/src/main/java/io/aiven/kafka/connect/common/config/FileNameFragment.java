@@ -186,13 +186,17 @@ public final class FileNameFragment extends ConfigFragment {
         return cfg.getInt(FILE_MAX_RECORDS);
     }
 
+    /**
+     * A setter to set easily set the values extracted by the File name fragment.
+     */
     public static class Setter {
-        Map<String, String> data;
+        /** The map to hold the key/value pairs. */
+        private Map<String, String> data;
+
 
         public Setter(final Map<String, String> data) {
             this.data = data;
         }
-
 
         /**
          * Returns the text of the filename template. May throw {@link ConfigException} if the property
