@@ -130,6 +130,7 @@ public final class S3OffsetManagerEntry implements OffsetManager.OffsetManagerEn
      *
      * @return the umber of records extracted from data returned from S3.
      */
+    @Override
     public long getRecordCount() {
         return recordCount;
     }

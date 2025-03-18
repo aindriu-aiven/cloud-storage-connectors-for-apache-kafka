@@ -16,6 +16,23 @@
 
 package io.aiven.kafka.connect.common.source;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import io.aiven.kafka.connect.common.source.input.AvroTestDataFixture;
 import io.aiven.kafka.connect.common.source.input.InputFormat;
@@ -24,8 +41,8 @@ import io.aiven.kafka.connect.common.source.input.ParquetTestDataFixture;
 import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.common.source.input.TransformerFactory;
 import io.aiven.kafka.connect.common.source.task.DistributionType;
-
 import io.aiven.kafka.connect.common.templating.Template;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,69 +50,66 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * A testing fixture that tests an {@link AbstractSourceRecordIterator} implementation.
- * @param <N> The Native object type.
- * @param <K> The native key type.
- * @param <O> The OffsetManagerEntry type.
- * @param <T> The concrete implementation of the {@link AbstractSourceRecord}     .
+ *
+ * @param <N>
+ *            The Native object type.
+ * @param <K>
+ *            The native key type.
+ * @param <O>
+ *            The OffsetManagerEntry type.
+ * @param <T>
+ *            The concrete implementation of the {@link AbstractSourceRecord} .
  */
 public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
     /** The offset manager */
     private OffsetManager<O> mockOffsetManager;
-    /** The key based on the file name*/
+    /** The key based on the file name */
     private K key;
     /** The file name for testing */
-    private final String fileName = "topic-00001-1741965423180.txt";
+    private final static String FILE_NAME = "topic-00001-1741965423180.txt";
     /** The file pattern for the file name */
-    private final String filePattern = "{{topic}}-{{partition}}-{{start_offset}}";
+    private final static String FILE_PATTERN = "{{topic}}-{{partition}}-{{start_offset}}";
 
     // The abstract methods that must be implemented
 
     /**
-     *  Convert a string into the key value for the native object.  In most cases the underlying system uses a string so returning the {@code key} argument is appropriate.  However, this method
-     *  provides an opportunity to convert the key into something that the native system would produce.
-     * @param key the key value as a string.
+     * Convert a string into the key value for the native object. In most cases the underlying system uses a string so
+     * returning the {@code key} argument is appropriate. However, this method provides an opportunity to convert the
+     * key into something that the native system would produce.
+     *
+     * @param key
+     *            the key value as a string.
      * @return the native key equivalent of the {@code key} parameter.
      */
     abstract protected K createKFrom(final String key);
 
     /**
      * Create the instance of the source record iterator to be tested.
-     * @param mockConfig A mock configuration returned by {@link #createMockedConfig()} with additional values added.
-     * @param mockOffsetManager A mock offset manager.
-     * @param transformer The trnasformer to use for the test.
+     *
+     * @param mockConfig
+     *            A mock configuration returned by {@link #createMockedConfig()} with additional values added.
+     * @param mockOffsetManager
+     *            A mock offset manager.
+     * @param transformer
+     *            The trnasformer to use for the test.
      * @return A configured AbstractSourceRecordIterator.
      */
-    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(final SourceCommonConfig mockConfig, final OffsetManager<O> mockOffsetManager, final Transformer transformer);
+    abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(
+            final SourceCommonConfig mockConfig, final OffsetManager<O> mockOffsetManager,
+            final Transformer transformer);
 
     /**
      * Create a client mutator that will add testing data to the iterator under test.
+     *
      * @return A client mutator that will add testing data to the iterator under test.
      */
     abstract protected ClientMutator<N, K, ?> createClientMutator();
 
     /**
      * Create a mock instance of SourceCommonConfig that is appropriate for the iterator under test.
+     *
      * @return A mock instance of SourceCommonConfig that is appropriate for the iterator under test.
      */
     abstract protected SourceCommonConfig createMockedConfig();
@@ -105,18 +119,24 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     @BeforeEach
     public void setUp() {
         mockOffsetManager = mock(OffsetManager.class);
-        key = createKFrom(fileName);
+        key = createKFrom(FILE_NAME);
     }
 
     /**
      * Create a mock SourceCOnfig with our necessary items added.
-     * @param filePattern The file pattern to match.
-     * @param taskId the task ID for the config.
-     * @param maxTasks The maximum tasks for the config.
-     * @param targetTopic the topic for the config.
+     *
+     * @param filePattern
+     *            The file pattern to match.
+     * @param taskId
+     *            the task ID for the config.
+     * @param maxTasks
+     *            The maximum tasks for the config.
+     * @param targetTopic
+     *            the topic for the config.
      * @return A mock SourceCommonConfig that contains the necessary data for the iterator under test.
      */
-    protected SourceCommonConfig mockSourceConfig(final String filePattern, final int taskId, final int maxTasks, final String targetTopic){
+    protected SourceCommonConfig mockSourceConfig(final String filePattern, final int taskId, final int maxTasks,
+            final String targetTopic) {
         SourceCommonConfig mockConfig = createMockedConfig();
         when(mockConfig.getDistributionType()).thenReturn(DistributionType.OBJECT_HASH);
         when(mockConfig.getTaskId()).thenReturn(taskId);
@@ -127,31 +147,33 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         return mockConfig;
     }
 
-    @ParameterizedTest(name="{index} {0}")
+    @ParameterizedTest(name = "{index} {0}")
     @MethodSource("inputFormatList")
     void testEmptyClientReturnsEmptyIterator(final InputFormat format, final byte[] ignore) throws Exception {
         Transformer transformer = TransformerFactory.getTransformer(format);
 
-        SourceCommonConfig mockConfig = mockSourceConfig(filePattern, 0, 1, null);
+        SourceCommonConfig mockConfig = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(mockConfig.getInputFormat()).thenReturn(format);
 
-        //verify empty is empty.
+        // verify empty is empty.
         createClientMutator().build();
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager, transformer);
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+                transformer);
         assertThat(iterator).isExhausted();
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
-    @ParameterizedTest(name="{index} {0}")
+    @ParameterizedTest(name = "{index} {0}")
     @MethodSource("inputFormatList")
     void testOneObjectReturnsOneObject(final InputFormat format, final byte[] data) throws Exception {
         Transformer transformer = TransformerFactory.getTransformer(format);
-        SourceCommonConfig mockConfig = mockSourceConfig(filePattern, 0, 1, null);
+        SourceCommonConfig mockConfig = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(mockConfig.getInputFormat()).thenReturn(format);
 
         // verify one data has one data
         createClientMutator().reset().addObject(key, ByteBuffer.wrap(data)).endOfBlock().build();
-        AbstractSourceRecordIterator<N, K, O, T>  iterator = createSourceRecordIterator(mockConfig, mockOffsetManager, transformer);
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+                transformer);
         assertThat(iterator).hasNext();
         assertThat(iterator.next()).isNotNull();
         assertThat(iterator).isExhausted();
@@ -161,40 +183,42 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     @Test
     void testThrowsExceptionWhenNextOnEmptyIterator() throws Exception {
         Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-        SourceCommonConfig mockConfig = mockSourceConfig(filePattern, 0, 1, null);
+        SourceCommonConfig mockConfig = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(mockConfig.getInputFormat()).thenReturn(InputFormat.BYTES);
 
-        //verify empty is empty.
+        // verify empty is empty.
         createClientMutator().build();
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager, transformer);
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+                transformer);
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
 
-
     /**
-     * Generates the data for the parameterized tests.
-     * Creates iterator for each of the {@link InputFormat} types.
+     * Generates the data for the parameterized tests. Creates iterator for each of the {@link InputFormat} types.
+     *
      * @return the data for the parameterized tests.
-     * @throws IOException on data creation error.
+     * @throws IOException
+     *             on data creation error.
      */
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     static List<Arguments> inputFormatList() throws IOException {
         List<Arguments> result = new ArrayList<>();
         byte[] bytes;
         for (InputFormat format : InputFormat.values()) {
             switch (format) {
-                case BYTES:
+                case BYTES :
                     bytes = "Hello World".getBytes(StandardCharsets.UTF_8);
                     break;
-                case AVRO:
+                case AVRO :
                     bytes = AvroTestDataFixture.generateMockAvroData(1);
                     break;
-                case JSONL:
+                case JSONL :
                     bytes = JsonTestDataFixture.getJsonRecs(1).getBytes(StandardCharsets.UTF_8);
                     break;
-                case PARQUET:
+                case PARQUET :
                     bytes = ParquetTestDataFixture.generateMockParquetData("name", 1);
                     break;
-                default:
+                default :
                     throw new IllegalArgumentException("Unsupported format: " + format);
             }
             result.add(Arguments.of(format, bytes));
@@ -202,16 +226,16 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         return result;
     }
 
-
-    @ParameterizedTest(name="{index} {0}")
+    @ParameterizedTest(name = "{index} {0}")
     @MethodSource("multiInputFormatList")
     void testMultipleRecordsReturned(final InputFormat format, final byte[] data) throws Exception {
         createClientMutator().reset().addObject(key, ByteBuffer.wrap(data)).endOfBlock().build();
         Transformer transformer = TransformerFactory.getTransformer(format);
-        final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
+        final SourceCommonConfig config = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(config.getTransformerMaxBufferSize()).thenReturn(4096);
         when(config.getInputFormat()).thenReturn(format);
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager, transformer);
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager,
+                transformer);
 
         // check first entry
         assertThat(iterator.hasNext()).isTrue();
@@ -228,30 +252,33 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
     }
 
     /**
-     * Generates the data for the parameterized tests requiring more than one record.
-     * Creates iterator for each of the {@link InputFormat} types.
+     * Generates the data for the parameterized tests requiring more than one record. Creates iterator for each of the
+     * {@link InputFormat} types.
+     *
      * @return the data for the parameterized tests.
-     * @throws IOException on data creation error.
+     * @throws IOException
+     *             on data creation error.
      */
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     static List<Arguments> multiInputFormatList() throws IOException {
         List<Arguments> result = new ArrayList<>();
         byte[] bytes;
         for (InputFormat format : InputFormat.values()) {
             switch (format) {
-                case BYTES:
-                    bytes = new byte[4096*2];
+                case BYTES :
+                    bytes = new byte[4096 * 2];
                     Arrays.fill(bytes, (byte) 5);
                     break;
-                case AVRO:
+                case AVRO :
                     bytes = AvroTestDataFixture.generateMockAvroData(2);
                     break;
-                case JSONL:
+                case JSONL :
                     bytes = JsonTestDataFixture.getJsonRecs(2).getBytes(StandardCharsets.UTF_8);
                     break;
-                case PARQUET:
+                case PARQUET :
                     bytes = ParquetTestDataFixture.generateMockParquetData("name", 2);
                     break;
-                default:
+                default :
                     throw new IllegalArgumentException("Unsupported format: " + format);
             }
             result.add(Arguments.of(format, bytes));
@@ -259,12 +286,14 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         return result;
     }
 
-
     /**
-     * This test sends 6000 bytes to a ByteArrayTransformer that only returns 4096 byte blocks, so this test
-     * should return 2 results.
-     * @throws Exception if data can not be created.
+     * This test sends 6000 bytes to a ByteArrayTransformer that only returns 4096 byte blocks, so this test should
+     * return 2 results.
+     *
+     * @throws Exception
+     *             if data can not be created.
      */
+    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     @Test
     void testIteratorProcessesMultipleObjectsFromByteArrayTransformer() throws Exception {
         final int byteArraySize = 6000;
@@ -275,10 +304,11 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         createClientMutator().reset().addObject(key, ByteBuffer.wrap(testData)).endOfBlock().build();
 
         Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-        final SourceCommonConfig config = mockSourceConfig(filePattern, 0, 1, null);
+        final SourceCommonConfig config = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(config.getTransformerMaxBufferSize()).thenReturn(4096);
         when(config.getInputFormat()).thenReturn(InputFormat.BYTES);
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager, transformer);
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager,
+                transformer);
 
         // check first entry
         assertThat(iterator.hasNext()).isTrue();
@@ -298,50 +328,56 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         assertThat(iterator).isExhausted();
     }
 
-
     /**
      * A mutator of the mocked client used by the iterator under test.
      * <p>
-     *     Most client implementations return a list of objects that are available, often with paging.  They also are able to detect
-     *     new data stored on the system while the iterator is running.  This framework allows us to test the interaction of the iterator
-     *     with the client.
+     * Most client implementations return a list of objects that are available, often with paging. They also are able to
+     * detect new data stored on the system while the iterator is running. This framework allows us to test the
+     * interaction of the iterator with the client.
      * </p>
      * <p>
-     *     The data is stored in blocks.  A block is the data returned from a single query to the client.  A block comprises zero or more
-     *     native objects.  Testing code adds native objects to the mutator.  When {@link #build} or {@link #endOfBlock} is called the current objects and
-     *     associated data are added to the block queue.
+     * The data is stored in blocks. A block is the data returned from a single query to the client. A block comprises
+     * zero or more native objects. Testing code adds native objects to the mutator. When {@link #build} or
+     * {@link #endOfBlock} is called the current objects and associated data are added to the block queue.
      * </p>
      * <p>
-     *     A standard usage pattern for the ClientMutator is:
-     *     </p>
-     *     <ul>
-     *         <li>create a Mutator</li>
-     *         <li>add 3 objects</li>
-     *         <li>mark end of block</li>
-     *         <li>mark end of block again</li>
-     *         <li>add 2 object</li>
-     *         <li>call {@link #build}</li>
-     *     </ul>
-     *     <p> this will result in an iterator that does the following:</p>
-     *     <ul>
-     *         <li>returns {@code true} to {@code hasNext}</li>
-     *         <li>returns the 3 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
-     *         <li>returns {@code false} to {@code hasNext} again</li>
-     *         <li>returns {@code true} to {@code hasNext}</li>
-     *         <li>returns the 2 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
-     *         <li>returns {@code false} to {@code hasNext} thereafter</li>
-     *     </ul>
+     * A standard usage pattern for the ClientMutator is:
      * </p>
-     * <p>For an example see the SourceRecordIteratorTest in the  s3-source-connector.</p>
+     * <ul>
+     * <li>create a Mutator</li>
+     * <li>add 3 objects</li>
+     * <li>mark end of block</li>
+     * <li>mark end of block again</li>
+     * <li>add 2 object</li>
+     * <li>call {@link #build}</li>
+     * </ul>
+     * <p>
+     * this will result in an iterator that does the following:
+     * </p>
+     * <ul>
+     * <li>returns {@code true} to {@code hasNext}</li>
+     * <li>returns the 3 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
+     * <li>returns {@code false} to {@code hasNext} again</li>
+     * <li>returns {@code true} to {@code hasNext}</li>
+     * <li>returns the 2 objects via the {@code next} call before returning {@code false} to {@code hasNext}.</li>
+     * <li>returns {@code false} to {@code hasNext} thereafter</li>
+     * </ul>
+     * </p>
+     * <p>
+     * For an example see the SourceRecordIteratorTest in the s3-source-connector.
+     * </p>
      *
-     * @param <N> The native object type the native object type.
-     * @param <K> the key the native key.
-     * @param <T> the concrete Mutator class.
+     * @param <N>
+     *            The native object type the native object type.
+     * @param <K>
+     *            the key the native key.
+     * @param <T>
+     *            the concrete Mutator class.
      *
      */
-    abstract public static class ClientMutator<N, K extends Comparable<K>, T extends ClientMutator<N,K,T>> {
+    abstract public static class ClientMutator<N, K extends Comparable<K>, T extends ClientMutator<N, K, T>> {
         /**
-         * A queue of  native objects and associated data.
+         * A queue of native objects and associated data.
          */
         protected Queue<Pair<List<N>, Map<K, ByteBuffer>>> blocks = new LinkedList<>();
         /**
@@ -353,35 +389,29 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
          */
         private Map<K, ByteBuffer> data = new HashMap<>();
 
-        /***
-         * A way to return this ClientMutator without defaulting to more primitive type.
-         */
-        protected T self;
-
         /**
-         * Constructor.
-         */
-        protected ClientMutator() {
-            self = (T) this;
-        }
-
-        /**
-         * Create an object of type N.  May be a mock object.
-         * @param key the Key for the object.
-         * @param data the data to associate with the object.
+         * Create an object of type N. May be a mock object.
+         *
+         * @param key
+         *            the Key for the object.
+         * @param data
+         *            the data to associate with the object.
          * @return An object of type N.
          */
         abstract protected N createObject(final K key, final ByteBuffer data);
 
         /**
-         * Extracts the blocks from the mutator and creates a client that will return the blocks in order on calls to the methods to get
-         * the available record information.  The client should be implemented in the concrete test class and need not be exposed here.
+         * Extracts the blocks from the mutator and creates a client that will return the blocks in order on calls to
+         * the methods to get the available record information. The client should be implemented in the concrete test
+         * class and need not be exposed here.
          */
         abstract public void build();
 
         /**
          * Gets the data for the specified key from the data map.
-         * @param key the key to retrieve.
+         *
+         * @param key
+         *            the key to retrieve.
          * @return the data associated with the key or {@code null}.
          */
         final protected ByteBuffer getData(final K key) {
@@ -403,8 +433,11 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
         /**
          * Adds an object to the block.
-         * @param key the key for the native object.
-         * @param data the data for the native object.  String is converted to bytes using UTF-8 encoding.
+         *
+         * @param key
+         *            the key for the native object.
+         * @param data
+         *            the data for the native object. String is converted to bytes using UTF-8 encoding.
          * @return this.
          */
         final public T addObject(final K key, final String data) {
@@ -413,18 +446,22 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
         /**
          * Adds an object to the block.
-         * @param key the key for the native object.
-         * @param data the data for the native object.
+         *
+         * @param key
+         *            the key for the native object.
+         * @param data
+         *            the data for the native object.
          * @return this.
          */
         final public T addObject(final K key, final ByteBuffer data) {
             objects.add(createObject(key, data));
             this.data.put(key, data);
-            return self;
+            return (T) this;
         }
 
         /**
          * Mark the end of a block and the start of a new one.
+         *
          * @return this.
          */
         final public T endOfBlock() {
@@ -433,13 +470,14 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         }
 
         /**
-         * reset the objects and data to their empty state.  Does not remove already generated blocks.
+         * reset the objects and data to their empty state. Does not remove already generated blocks.
+         *
          * @return this.
          */
         final public T reset() {
             objects = new ArrayList<>();
             data = new HashMap<>();
-            return self;
+            return (T) this;
         }
     }
 }

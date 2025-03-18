@@ -1,35 +1,57 @@
+/*
+ * Copyright 2025 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.aiven.kafka.connect.azure.source.utils;
 
-import com.azure.storage.blob.models.BlobItem;
-import com.azure.storage.blob.models.BlobItemProperties;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
+
 import io.aiven.kafka.connect.azure.source.config.AzureBlobSourceConfig;
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIteratorTest;
 import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
+
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobItemProperties;
 import reactor.core.publisher.Flux;
 
-import java.nio.ByteBuffer;
-import java.util.stream.Stream;
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-
-public class AzureSourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
+final public class AzureSourceRecordIteratorTest
+        extends
+            AbstractSourceRecordIteratorTest<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> { // NOPMD
+                                                                                                             // TestClassWithoutTestCases
 
     private AzureBlobClient azureBlobClient;
 
     @Override
-    protected String createKFrom(String key) {
+    protected String createKFrom(final String key) {
         return key;
     }
 
     @Override
-    protected AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> createSourceRecordIterator(SourceCommonConfig mockConfig, OffsetManager<AzureOffsetManagerEntry> mockOffsetManager, Transformer transformer) {
-        return new SourceRecordIterator((AzureBlobSourceConfig) mockConfig, mockOffsetManager, transformer, azureBlobClient);
+    protected AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> createSourceRecordIterator(
+            final SourceCommonConfig mockConfig, final OffsetManager<AzureOffsetManagerEntry> mockOffsetManager,
+            final Transformer transformer) {
+        return new AzureSourceRecordIterator((AzureBlobSourceConfig) mockConfig, mockOffsetManager, transformer,
+                azureBlobClient);
     }
 
     @Override
@@ -39,7 +61,7 @@ public class AzureSourceRecordIteratorTest extends AbstractSourceRecordIteratorT
 
     @Override
     protected SourceCommonConfig createMockedConfig() {
-        AzureBlobSourceConfig config = mock(AzureBlobSourceConfig.class);
+        final AzureBlobSourceConfig config = mock(AzureBlobSourceConfig.class);
         when(config.getAzureContainerName()).thenReturn("container1");
         return config;
     }
@@ -47,27 +69,28 @@ public class AzureSourceRecordIteratorTest extends AbstractSourceRecordIteratorT
     private class Mutator extends AbstractSourceRecordIteratorTest.ClientMutator<BlobItem, String, Mutator> {
 
         @Override
-        protected BlobItem createObject(String key, ByteBuffer data) {
-            BlobItem blobItem = new BlobItem();
+        protected BlobItem createObject(final String key, final ByteBuffer data) {
+            final BlobItem blobItem = new BlobItem();
             blobItem.setName(key);
-            BlobItemProperties blobItemProperties = new BlobItemProperties();
-            blobItemProperties.setContentLength((long)data.capacity());
+            final BlobItemProperties blobItemProperties = new BlobItemProperties();
+            blobItemProperties.setContentLength((long) data.capacity());
             blobItem.setProperties(blobItemProperties);
             return blobItem;
         }
 
         /**
          * Create a S3 ListObjectV2Respone object from a single block.
+         *
          * @return the new ListObjectV2Response
          */
         private Stream<BlobItem> dequeueData() {
-            // Dequeue a block.  Sets the objects.
+            // Dequeue a block. Sets the objects.
             dequeueBlock();
             return objects.stream();
         }
 
-        private Flux<ByteBuffer> getStream(String key) {
-            ByteBuffer buffer = getData(key);
+        private Flux<ByteBuffer> getStream(final String key) {
+            final ByteBuffer buffer = getData(key);
             if (buffer != null) {
                 return Flux.just(buffer);
             }
@@ -82,8 +105,8 @@ public class AzureSourceRecordIteratorTest extends AbstractSourceRecordIteratorT
             }
 
             azureBlobClient = mock(AzureBlobClient.class);
-            when(azureBlobClient.getAzureBlobStream()).thenAnswer( env -> dequeueData());
-            when(azureBlobClient.getBlob(anyString())).thenAnswer( env -> getStream(env.getArgument(0)));
+            when(azureBlobClient.getAzureBlobStream()).thenAnswer(env -> dequeueData());
+            when(azureBlobClient.getBlob(anyString())).thenAnswer(env -> getStream(env.getArgument(0)));
         }
     }
 }

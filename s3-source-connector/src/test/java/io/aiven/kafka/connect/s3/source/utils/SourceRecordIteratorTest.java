@@ -16,13 +16,11 @@
 
 package io.aiven.kafka.connect.s3.source.utils;
 
-import static io.aiven.kafka.connect.config.s3.S3ConfigFragment.AWS_S3_BUCKET_NAME_CONFIG;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
@@ -42,7 +40,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 /**
  * An implementation of the SourceRecordIteratorTest.
  */
-final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
+@SuppressWarnings("PMD.TestClassWithoutTestCases")
+final class SourceRecordIteratorTest
+        extends
+            AbstractSourceRecordIteratorTest<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
 
     /** The client that we build the iterator from */
     private S3Client s3Client;
@@ -54,9 +55,12 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
     }
 
     @Override
-    protected AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> createSourceRecordIterator(final SourceCommonConfig mockConfig, final OffsetManager<S3OffsetManagerEntry> mockOffsetManager, final Transformer mockTransformer) {
+    protected AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> createSourceRecordIterator(
+            final SourceCommonConfig mockConfig, final OffsetManager<S3OffsetManagerEntry> mockOffsetManager,
+            final Transformer mockTransformer) {
         // create an instance of our concrete iterator.
-        return new SourceRecordIterator((S3SourceConfig) mockConfig, mockOffsetManager,  mockTransformer, new AWSV2SourceClient(s3Client, (S3SourceConfig) mockConfig));
+        return new SourceRecordIterator((S3SourceConfig) mockConfig, mockOffsetManager, mockTransformer,
+                new AWSV2SourceClient(s3Client, (S3SourceConfig) mockConfig));
     }
 
     @Override
@@ -68,7 +72,7 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
     @Override
     protected SourceCommonConfig createMockedConfig() {
         // create a mocked config with the values required by the S3CSourceConfig
-        S3SourceConfig s3SourceConfig = mock(S3SourceConfig.class);
+        final S3SourceConfig s3SourceConfig = mock(S3SourceConfig.class);
         when(s3SourceConfig.getS3FetchBufferSize()).thenReturn(1);
         when(s3SourceConfig.getAwsS3BucketName()).thenReturn("testBucket");
         when(s3SourceConfig.getFetchPageSize()).thenReturn(10);
@@ -86,9 +90,11 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
         }
 
         /**
-         * Creates an  S3 ResponseBytes object from the key and the data for that key.
-         * In this implementation the native key is a string so we just use String here.
-         * @param key the key to build the response for.
+         * Creates an S3 ResponseBytes object from the key and the data for that key. In this implementation the native
+         * key is a string so we just use String here.
+         *
+         * @param key
+         *            the key to build the response for.
          * @return the ResponseBytes object for the key.
          */
         private ResponseBytes<byte[]> getResponse(final String key) {
@@ -97,10 +103,11 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
 
         /**
          * Create a S3 ListObjectV2Respone object from a single block.
+         *
          * @return the new ListObjectV2Response
          */
         private ListObjectsV2Response dequeueData() {
-            // Dequeue a block.  Sets the objects.
+            // Dequeue a block. Sets the objects.
             dequeueBlock();
             return ListObjectsV2Response.builder().contents(objects).isTruncated(false).build();
         }
@@ -123,4 +130,3 @@ final class SourceRecordIteratorTest extends AbstractSourceRecordIteratorTest<S3
     }
 
 }
-

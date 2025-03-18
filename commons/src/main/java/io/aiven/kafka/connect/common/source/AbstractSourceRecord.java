@@ -52,15 +52,15 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
     /** The native info for this record. */
     private final NativeInfo<N, K> nativeInfo;
 
-
     /**
      * Construct a source record from a native item.
      *
-     * @param logger The logger for the implementation class.
+     * @param logger
+     *            The logger for the implementation class.
      * @param nativeInfo
      *            the native information for the native that his record represents.
      */
-    public AbstractSourceRecord(final Logger logger, final NativeInfo<N,K> nativeInfo) {
+    public AbstractSourceRecord(final Logger logger, final NativeInfo<N, K> nativeInfo) {
         this.logger = logger;
         this.nativeInfo = nativeInfo;
     }
@@ -85,14 +85,18 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      *
      * @return The key for the native object.
      */
-    final public K getNativeKey() { return nativeInfo.getNativeKey(); }
+    final public K getNativeKey() {
+        return nativeInfo.getNativeKey();
+    }
 
     /**
      * Gets the number of bytes in the input stream extracted from the native object.
      *
      * @return The number of bytes in the input stream extracted from the native object.
      */
-    final public long getNativeItemSize() { return nativeInfo.getNativeItemSize(); };
+    final public long getNativeItemSize() {
+        return nativeInfo.getNativeItemSize();
+    }
 
     /**
      * Makes a duplicate of this AbstractSourceRecord. This is similar to the Java {@code clone} method but without the
@@ -100,14 +104,14 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
      *
      * @return A duplicate of this AbstractSourceRecord
      */
-    abstract public  E duplicate();
+    abstract public E duplicate();
 
     /**
      * Gets the native item that this source record is working with.
      *
      * @return The native item that this source record is working with.
      */
-    final public  N getNativeItem() {
+    final public N getNativeItem() {
         return nativeInfo.getNativeItem();
     }
 
@@ -229,8 +233,10 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
     /**
      * Creates a SourceRecord that can be returned to a Kafka topic
      *
-     * @param tolerance The error tolerance for the record processing.
-     * @param offsetManager The offset manager for the offset entry.
+     * @param tolerance
+     *            The error tolerance for the record processing.
+     * @param offsetManager
+     *            The offset manager for the offset entry.
      * @return A kafka {@link SourceRecord SourceRecord} This can return null if error tolerance is set to 'All'
      */
     final public SourceRecord getSourceRecord(final ErrorsTolerance tolerance, final OffsetManager<O> offsetManager) {
@@ -257,26 +263,32 @@ public abstract class AbstractSourceRecord<N, K extends Comparable<K>, O extends
 
     /**
      * Information about the Native object.
-     * @param <N> The native object type.
-     * @param <K> the native key type
+     *
+     * @param <N>
+     *            The native object type.
+     * @param <K>
+     *            the native key type
      */
     public interface NativeInfo<N, K> {
         /**
          * Gets the native item.
+         *
          * @return The native item.
          */
         N getNativeItem();
 
         /**
          * Gets the native key
+         *
          * @return The Native key.
          */
         K getNativeKey();
 
         /**
          * Gets the number of bytes in the input stream extracted from the native object.
+         *
          * @return The number of bytes in the input stream extracted from the native object.
          */
-       long getNativeItemSize();
+        long getNativeItemSize();
     }
 }

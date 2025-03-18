@@ -22,10 +22,12 @@ import com.azure.storage.blob.models.BlobItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AzureBlobSourceRecord extends AbstractSourceRecord<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobSourceRecord.class);
+public class AzureSourceRecord
+        extends
+            AbstractSourceRecord<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AzureSourceRecord.class);
 
-    public AzureBlobSourceRecord(final BlobItem blobItem) {
+    public AzureSourceRecord(final BlobItem blobItem) {
         super(LOGGER, new NativeInfo<BlobItem, String>() {
 
             @Override
@@ -45,13 +47,13 @@ public class AzureBlobSourceRecord extends AbstractSourceRecord<BlobItem, String
         });
     }
 
-    private AzureBlobSourceRecord(final AzureBlobSourceRecord azureBlobSourceRecord) {
+    private AzureSourceRecord(final AzureSourceRecord azureBlobSourceRecord) {
         super(azureBlobSourceRecord);
     }
 
     @Override
-    public AzureBlobSourceRecord duplicate() {
-        return new AzureBlobSourceRecord(this);
+    public AzureSourceRecord duplicate() {
+        return new AzureSourceRecord(this);
     }
 
 }

@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 public class S3SourceRecord extends AbstractSourceRecord<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3SourceRecord.class);
 
-
     public S3SourceRecord(final S3Object s3Object) {
         super(LOGGER, new NativeInfo<S3Object, String>() {
             @Override
@@ -35,7 +34,7 @@ public class S3SourceRecord extends AbstractSourceRecord<S3Object, String, S3Off
 
             @Override
             public String getNativeKey() {
-               return s3Object.key();
+                return s3Object.key();
             }
 
             @Override
@@ -45,6 +44,7 @@ public class S3SourceRecord extends AbstractSourceRecord<S3Object, String, S3Off
         });
     }
 
+    @Override
     public S3SourceRecord duplicate() {
         return new S3SourceRecord(getNativeItem());
     }

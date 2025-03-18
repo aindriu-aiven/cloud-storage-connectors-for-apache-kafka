@@ -16,27 +16,33 @@
 
 package io.aiven.kafka.connect.common.source;
 
-import io.aiven.kafka.connect.common.config.enums.ErrorsTolerance;
-import io.aiven.kafka.connect.common.source.task.Context;
-
-import org.apache.kafka.connect.data.SchemaAndValue;
-import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.DataException;
-import org.apache.kafka.connect.source.SourceRecord;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.apache.kafka.connect.data.SchemaAndValue;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
+import org.apache.kafka.connect.source.SourceRecord;
+
+import io.aiven.kafka.connect.common.config.enums.ErrorsTolerance;
+import io.aiven.kafka.connect.common.source.task.Context;
+
+import org.junit.jupiter.api.Test;
+
 /**
  * Tests an AbstractSourceRecord implementation.
- * @param <N> The Native object type.
- * @param <K> The native key type.
- * @param <O> The OffsetManagerEntry type.
- * @param <T> The concrete implementation of the {@link AbstractSourceRecord}     .
+ *
+ * @param <N>
+ *            The Native object type.
+ * @param <K>
+ *            The native key type.
+ * @param <O>
+ *            The OffsetManagerEntry type.
+ * @param <T>
+ *            The concrete implementation of the {@link AbstractSourceRecord} .
  */
 public abstract class AbstractSourceRecordTest<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
 
@@ -45,26 +51,31 @@ public abstract class AbstractSourceRecordTest<N, K extends Comparable<K>, O ext
     // abstract methods
 
     /**
-     *  Convert a string into the key value for the native object.  In most cases the underlying system uses a string so returning the {@code key} argument is appropriate.  However, this method
-     *  provides an opportunity to convert the key into something that the native system would produce.
-     * @param key the key value as a string.
+     * Convert a string into the key value for the native object. In most cases the underlying system uses a string so
+     * returning the {@code key} argument is appropriate. However, this method provides an opportunity to convert the
+     * key into something that the native system would produce.
+     *
+     * @param key
+     *            the key value as a string.
      * @return the native key equivalent of the {@code key} parameter.
      */
     abstract protected K createKFrom(final String key);
 
     /**
      * Create an offset manager entry from the string key value,
-     * @param key the key value as a string.
+     *
+     * @param key
+     *            the key value as a string.
      * @return an OffsetManager entry.
      */
     abstract protected O createOffsetManagerEntry(final String key);
 
     /**
      * Creates the source record under test.
+     *
      * @return the source record under test.
      */
     abstract protected T createSourceRecord();
-
 
     @Test
     void testCreateSourceRecord() {

@@ -33,6 +33,7 @@ import io.aiven.kafka.connect.common.source.task.Context;
 import io.aiven.kafka.connect.common.source.task.DistributionStrategy;
 import io.aiven.kafka.connect.common.source.task.DistributionType;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.function.IOSupplier;
 import org.slf4j.Logger;
 
@@ -78,8 +79,6 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
     protected final FileMatching fileMatching;
     /** The predicate which will determine if an native item should be assigned to this task for processing */
     protected final Predicate<Optional<T>> taskAssignment;
-    /** The utility to extract the context from the native item key */
-    private final FilePatternUtils filePattern;
     /**
      * The native item key which is currently being processed, when rehydrating from the storage engine we will skip
      * other native items that come before this key.
@@ -94,12 +93,17 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
     /**
      * Constructor.
-     * @param sourceConfig The source configuration.
-     * @param offsetManager the Offset manager to use.
-     * @param transformer the transformer to use.
-     * @param bufferSize the size of the ring buffer.
+     *
+     * @param sourceConfig
+     *            The source configuration.
+     * @param offsetManager
+     *            the Offset manager to use.
+     * @param transformer
+     *            the transformer to use.
+     * @param bufferSize
+     *            the size of the ring buffer.
      */
-    //@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "stores mutable fields in offset manager to be reviewed before release")
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "stores mutable fields in offset manager to be reviewed before release")
     public AbstractSourceRecordIterator(final SourceCommonConfig sourceConfig, final OffsetManager<O> offsetManager,
             final Transformer transformer, final int bufferSize) {
         super();
@@ -112,9 +116,8 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
         this.transformer = transformer;
         this.targetTopics = Optional.ofNullable(sourceConfig.getTargetTopic());
         this.taskId = sourceConfig.getTaskId() % maxTasks;
-        this.filePattern = new FilePatternUtils(sourceConfig.getFilenameTemplate().toString());
         this.taskAssignment = new TaskAssignment(distributionType.getDistributionStrategy(maxTasks));
-        this.fileMatching = new FileMatching(filePattern);
+        this.fileMatching = new FileMatching(new FilePatternUtils(sourceConfig.getFilenameTemplate().toString()));
         this.inner = Collections.emptyIterator();
         this.outer = Collections.emptyIterator();
         this.ringBuffer = new RingBuffer<>(Math.max(1, bufferSize));
@@ -122,47 +125,59 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
     /**
      * Gets the logger for the concrete implementation.
+     *
      * @return The logger for the concrete implementation.
      */
     abstract protected Logger getLogger();
 
     /**
      * Get a stream of Native object from the underlying storage layer.
-     * @param offset the native key to start from.  May be {@code null}.
-     * @return A stream of natvie objects.  May be empty but not {@code null}.
+     *
+     * @param offset
+     *            the native key to start from. May be {@code null}.
+     * @return A stream of natvie objects. May be empty but not {@code null}.
      */
     abstract protected Stream<N> getNativeItemStream(K offset);
 
     /**
      * Gets an IOSupplier for the specific source record.
-     * @param sourceRecord the source record to get the input stream from.
+     *
+     * @param sourceRecord
+     *            the source record to get the input stream from.
      * @return the IOSupplier that retrieves an InputStream from the source record.
      */
     abstract protected IOSupplier<InputStream> getInputStream(T sourceRecord);
 
     /**
      * Gets the native key for the native object.
-     * @param nativeObject the native object ot retrieve the native key for.
+     *
+     * @param nativeObject
+     *            the native object ot retrieve the native key for.
      * @return The native key for the native object.
      */
     abstract protected K getNativeKey(N nativeObject);
 
     /**
      * Gets the AbstractSourceRecord implementation for the native object.
-     * @param nativeObject the native object to get the AbstractSourceRecord for.
+     *
+     * @param nativeObject
+     *            the native object to get the AbstractSourceRecord for.
      * @return the AbstractSourceRecord for the natvie object.
      */
     abstract protected T createSourceRecord(N nativeObject);
 
     /**
      * Creates an OffsetManagerEntry for a native object.
-     * @param nativeObject the native object to create the OffsetManagerEntry for.
+     *
+     * @param nativeObject
+     *            the native object to create the OffsetManagerEntry for.
      * @return An OffsetManagerEntry for a native object.
      */
     abstract protected O createOffsetManagerEntry(N nativeObject);
 
     /**
      * Creates an offset manager key for the last seen native key.
+     *
      * @see #getLastSeenNativeKey()
      * @return An offset manager key.
      */
@@ -170,12 +185,12 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
     /**
      * Returns the last seen native key.
+     *
      * @return The last seen native key.
      */
     final protected K getLastSeenNativeKey() {
         return lastSeenNativeKey;
     }
-
 
     @Override
     final public boolean hasNext() {
@@ -186,7 +201,11 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
             offsetManager.removeEntry(getOffsetManagerKey());
         }
         if (!inner.hasNext() && !outer.hasNext()) {
-            inner = getNativeItemStream(ringBuffer.getOldest()).map(fileMatching).filter(taskAssignment).filter(Optional::isPresent).map(Optional::get).iterator();
+            inner = getNativeItemStream(ringBuffer.getOldest()).map(fileMatching)
+                    .filter(taskAssignment)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .iterator();
         }
         while (!outer.hasNext() && inner.hasNext()) {
             outer = convert(inner.next()).iterator();
@@ -212,7 +231,8 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
      * @return a stream of T created from the input stream of the native item.
      */
     private Stream<T> convert(final T sourceRecord) {
-        sourceRecord.setKeyData(transformer.getKeyData(sourceRecord.getNativeKey(), sourceRecord.getTopic(), sourceConfig));
+        sourceRecord
+                .setKeyData(transformer.getKeyData(sourceRecord.getNativeKey(), sourceRecord.getTopic(), sourceConfig));
 
         lastSeenNativeKey = sourceRecord.getNativeKey();
 
@@ -246,7 +266,9 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
 
         /**
          * Constructor.
-         * @param sourceRecord The source record to provide default values..
+         *
+         * @param sourceRecord
+         *            The source record to provide default values..
          */
         public Mapper(final T sourceRecord) {
             // operation within the Transformer
@@ -339,5 +361,4 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
             }
         }
     }
-
 }

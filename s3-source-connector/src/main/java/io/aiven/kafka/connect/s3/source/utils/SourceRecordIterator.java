@@ -34,7 +34,9 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * Iterator that processes S3 files and creates Kafka source records. Supports different output formats (Avro, JSON,
  * Parquet).
  */
-public final class SourceRecordIterator extends AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
+public final class SourceRecordIterator
+        extends
+            AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceRecordIterator.class);
 

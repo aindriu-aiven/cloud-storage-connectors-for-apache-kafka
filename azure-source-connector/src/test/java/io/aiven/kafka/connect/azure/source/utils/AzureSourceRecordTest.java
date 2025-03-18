@@ -16,32 +16,35 @@
 
 package io.aiven.kafka.connect.azure.source.utils;
 
-import com.azure.storage.blob.models.BlobItemProperties;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordTest;
 
 import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobItemProperties;
 
-class AzureSourceRecordTest extends AbstractSourceRecordTest<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
+final class AzureSourceRecordTest
+        extends
+            AbstractSourceRecordTest<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> { // NOPMD
+                                                                                                     // TestClassWithoutTestCases
     public static final String TEST_BLOB_NAME_TXT = "topic-00001-1741965423180.txt";
     public static final String CONTAINER = "container1";
 
     @Override
-    protected String createKFrom(String key) {
+    protected String createKFrom(final String key) {
         return key;
     }
 
     @Override
-    protected AzureOffsetManagerEntry createOffsetManagerEntry(String key) {
+    protected AzureOffsetManagerEntry createOffsetManagerEntry(final String key) {
         return new AzureOffsetManagerEntry(CONTAINER, key);
     }
 
     @Override
-    protected AzureBlobSourceRecord createSourceRecord() {
-        BlobItem blobItem = new BlobItem();
+    protected AzureSourceRecord createSourceRecord() {
+        final BlobItem blobItem = new BlobItem();
         blobItem.setName(TEST_BLOB_NAME_TXT);
-        BlobItemProperties blobItemProperties = new BlobItemProperties();
+        final BlobItemProperties blobItemProperties = new BlobItemProperties();
         blobItemProperties.setContentLength(5L);
         blobItem.setProperties(blobItemProperties);
-        return new AzureBlobSourceRecord(blobItem);
+        return new AzureSourceRecord(blobItem);
     }
 }

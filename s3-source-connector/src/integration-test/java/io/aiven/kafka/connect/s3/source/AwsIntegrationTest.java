@@ -181,7 +181,7 @@ class AwsIntegrationTest implements IntegrationBase {
         final HashSet<String> seenKeys = new HashSet<>();
         while (sourceRecordIterator.hasNext()) {
             final S3SourceRecord s3SourceRecord = sourceRecordIterator.next();
-            final String key = s3SourceRecord.getObjectKey();
+            final String key = s3SourceRecord.getNativeKey();
             assertThat(offsetKeys).contains(key);
             seenKeys.add(key);
         }
@@ -250,7 +250,7 @@ class AwsIntegrationTest implements IntegrationBase {
         final Map<String, List<Long>> seenRecords = new HashMap<>();
         while (sourceRecordIterator.hasNext()) {
             final S3SourceRecord s3SourceRecord = sourceRecordIterator.next();
-            final String key = s3SourceRecord.getObjectKey();
+            final String key = s3SourceRecord.getNativeKey();
             seenRecords.compute(key, (k, v) -> {
                 final List<Long> lst = v == null ? new ArrayList<>() : v; // NOPMD new object inside loop
                 lst.add(s3SourceRecord.getOffsetManagerEntry().getRecordCount());
@@ -301,10 +301,10 @@ class AwsIntegrationTest implements IntegrationBase {
 
         assertThat(iterator).hasNext();
         S3SourceRecord s3SourceRecord = iterator.next();
-        actualKeys.add(s3SourceRecord.getObjectKey());
+        actualKeys.add(s3SourceRecord.getNativeKey());
         assertThat(iterator).hasNext();
         s3SourceRecord = iterator.next();
-        actualKeys.add(s3SourceRecord.getObjectKey());
+        actualKeys.add(s3SourceRecord.getNativeKey());
         assertThat(iterator).isExhausted();
         assertThat(actualKeys).containsAll(expectedKeys);
 
@@ -314,7 +314,7 @@ class AwsIntegrationTest implements IntegrationBase {
 
         assertThat(iterator).hasNext();
         s3SourceRecord = iterator.next();
-        actualKeys.add(s3SourceRecord.getObjectKey());
+        actualKeys.add(s3SourceRecord.getNativeKey());
         assertThat(iterator).isExhausted();
         assertThat(actualKeys).containsAll(expectedKeys);
 

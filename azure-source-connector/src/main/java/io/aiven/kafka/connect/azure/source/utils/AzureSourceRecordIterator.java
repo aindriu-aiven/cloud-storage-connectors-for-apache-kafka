@@ -17,20 +17,16 @@
 package io.aiven.kafka.connect.azure.source.utils;
 
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 
 import io.aiven.kafka.connect.azure.source.config.AzureBlobSourceConfig;
 import io.aiven.kafka.connect.common.source.AbstractSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
-import io.aiven.kafka.connect.common.source.input.utils.FilePatternUtils;
 
 import com.azure.storage.blob.models.BlobItem;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.function.IOSupplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -40,7 +36,9 @@ import org.slf4j.LoggerFactory;
  * Iterator that processes Azure Blob files and creates Kafka source records. Supports different output formats (Avro,
  * JSON, Parquet).
  */
-public final class SourceRecordIterator extends AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureBlobSourceRecord> {
+public final class AzureSourceRecordIterator
+        extends
+            AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> {
 
     /** The azure blob client that provides the blobItems */
     private final AzureBlobClient azureBlobClient;
@@ -48,9 +46,9 @@ public final class SourceRecordIterator extends AbstractSourceRecordIterator<Blo
     /** The Azure container we are processing */
     private final String container;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceRecordIterator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AzureSourceRecordIterator.class);
 
-    public SourceRecordIterator(final AzureBlobSourceConfig azureBlobSourceConfig,
+    public AzureSourceRecordIterator(final AzureBlobSourceConfig azureBlobSourceConfig,
             final OffsetManager<AzureOffsetManagerEntry> offsetManager, final Transformer transformer,
             final AzureBlobClient azureBlobClient) {
         super(azureBlobSourceConfig, offsetManager, transformer, 0);
@@ -69,18 +67,18 @@ public final class SourceRecordIterator extends AbstractSourceRecordIterator<Blo
     }
 
     @Override
-    protected IOSupplier<InputStream> getInputStream(final AzureBlobSourceRecord sourceRecord) {
+    protected IOSupplier<InputStream> getInputStream(final AzureSourceRecord sourceRecord) {
         return () -> new ByteBufferInputStream(azureBlobClient.getBlob(sourceRecord.getNativeKey()).blockFirst());
     }
 
     @Override
-    protected String getNativeKey(BlobItem nativeObject) {
+    protected String getNativeKey(final BlobItem nativeObject) {
         return nativeObject.getName();
     }
 
     @Override
-    protected AzureBlobSourceRecord createSourceRecord(final BlobItem nativeObject) {
-        return new AzureBlobSourceRecord(nativeObject);
+    protected AzureSourceRecord createSourceRecord(final BlobItem nativeObject) {
+        return new AzureSourceRecord(nativeObject);
     }
 
     @Override
