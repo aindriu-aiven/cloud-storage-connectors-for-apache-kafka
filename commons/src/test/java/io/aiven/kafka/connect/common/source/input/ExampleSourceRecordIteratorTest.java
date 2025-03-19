@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.aiven.kafka.connect.common.source;
+package io.aiven.kafka.connect.common.source.input;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -24,24 +24,25 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
-import io.aiven.kafka.connect.common.source.impl.NativeClient;
-import io.aiven.kafka.connect.common.source.impl.NativeObject;
-import io.aiven.kafka.connect.common.source.impl.OffsetManagerEntry;
-import io.aiven.kafka.connect.common.source.impl.SourceRecord;
-import io.aiven.kafka.connect.common.source.impl.SourceRecordIterator;
-import io.aiven.kafka.connect.common.source.input.Transformer;
+import io.aiven.kafka.connect.common.source.AbstractSourceRecordIteratorTest;
+import io.aiven.kafka.connect.common.source.OffsetManager;
+import io.aiven.kafka.connect.common.source.impl.ExampleNativeClient;
+import io.aiven.kafka.connect.common.source.impl.ExampleNativeObject;
+import io.aiven.kafka.connect.common.source.impl.ExampleOffsetManagerEntry;
+import io.aiven.kafka.connect.common.source.impl.ExampleSourceRecord;
+import io.aiven.kafka.connect.common.source.impl.ExampleSourceRecordIterator;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Test to verify AbstraactSourceRecordIterator works.
  */
-public class SourceRecordIteratorTest
+@SuppressWarnings("PMD.TestClassWithoutTestCases")
+public class ExampleSourceRecordIteratorTest
         extends
-            AbstractSourceRecordIteratorTest<NativeObject, String, OffsetManagerEntry, SourceRecord> { // NOPMD
-                                                                                                       // TestClassWithoutTestCases
+            AbstractSourceRecordIteratorTest<ExampleNativeObject, String, ExampleOffsetManagerEntry, ExampleSourceRecord> {
 
-    NativeClient nativeClient;
+    ExampleNativeClient nativeClient;
 
     @Override
     protected String createKFrom(final String key) {
@@ -49,9 +50,9 @@ public class SourceRecordIteratorTest
     }
 
     @Override
-    protected SourceRecordIterator createSourceRecordIterator(final SourceCommonConfig mockConfig,
-            final OffsetManager<OffsetManagerEntry> mockOffsetManager, final Transformer transformer) {
-        return new SourceRecordIterator(mockConfig, mockOffsetManager, transformer, 4096, nativeClient);
+    protected ExampleSourceRecordIterator createSourceRecordIterator(final SourceCommonConfig mockConfig,
+            final OffsetManager<ExampleOffsetManagerEntry> offsetManager, final Transformer transformer) {
+        return new ExampleSourceRecordIterator(mockConfig, offsetManager, transformer, 4096, nativeClient);
     }
 
     @Override
@@ -65,11 +66,11 @@ public class SourceRecordIteratorTest
     }
 
     @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "stores mutable fields in offset manager to be reviewed before release")
-    public class Mutator extends ClientMutator<NativeObject, String, Mutator> {
+    public class Mutator extends ClientMutator<ExampleNativeObject, String, Mutator> {
 
         @Override
-        protected NativeObject createObject(final String key, final ByteBuffer data) {
-            return new NativeObject(key, data);
+        protected ExampleNativeObject createObject(final String key, final ByteBuffer data) {
+            return new ExampleNativeObject(key, data);
         }
 
         /**
@@ -77,7 +78,7 @@ public class SourceRecordIteratorTest
          *
          * @return A list of NativeObjects from a single block.
          */
-        private List<NativeObject> dequeueData() {
+        private List<ExampleNativeObject> dequeueData() {
             // Dequeue a block. Sets the objects.
             dequeueBlock();
             return objects;
@@ -85,7 +86,7 @@ public class SourceRecordIteratorTest
 
         @Override
         public void build() {
-            nativeClient = mock(NativeClient.class);
+            nativeClient = mock(ExampleNativeClient.class);
 
             // when a listObjectV2 is requests deququ the answer from the blocks.
             when(nativeClient.listObjects()).thenAnswer(env -> dequeueData());

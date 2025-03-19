@@ -24,10 +24,10 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
-import io.aiven.kafka.connect.common.source.impl.NativeClient;
-import io.aiven.kafka.connect.common.source.impl.OffsetManagerEntry;
-import io.aiven.kafka.connect.common.source.impl.SourceRecord;
-import io.aiven.kafka.connect.common.source.impl.SourceRecordIterator;
+import io.aiven.kafka.connect.common.source.impl.ExampleNativeClient;
+import io.aiven.kafka.connect.common.source.impl.ExampleOffsetManagerEntry;
+import io.aiven.kafka.connect.common.source.impl.ExampleSourceRecord;
+import io.aiven.kafka.connect.common.source.impl.ExampleSourceRecordIterator;
 import io.aiven.kafka.connect.common.source.input.InputFormat;
 import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.common.source.input.TransformerFactory;
@@ -66,15 +66,15 @@ class TaskAssignmentTest {
         final String[] keys = { "topic-00001-1741965423183.txt", "topic-00001-1741965423180.txt",
                 "topic-00001-1741965423181.txt", "topic-00001-1741965423182.txt" };
 
-        final OffsetManager<OffsetManagerEntry> offsetManager = new OffsetManager<>(null);
+        final OffsetManager<ExampleOffsetManagerEntry> offsetManager = new OffsetManager<>(null);
         final Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
         final SourceCommonConfig config = configureMockConfig(taskId, maxTasks, DistributionType.OBJECT_HASH);
-        final NativeClient nativeClient = mock(NativeClient.class);
-        final SourceRecordIterator iterator = new SourceRecordIterator(config, offsetManager, transformer, 4096,
-                nativeClient);
+        final ExampleNativeClient nativeClient = mock(ExampleNativeClient.class);
+        final ExampleSourceRecordIterator iterator = new ExampleSourceRecordIterator(config, offsetManager, transformer,
+                4096, nativeClient);
 
-        final Predicate<Optional<SourceRecord>> pred = iterator.taskAssignment;
-        final SourceRecord record = mock(SourceRecord.class);
+        final Predicate<Optional<ExampleSourceRecord>> pred = iterator.taskAssignment;
+        final ExampleSourceRecord record = mock(ExampleSourceRecord.class);
         for (int i = 0; i < maxTasks; i++) {
             final Context<String> context = new Context<>(keys[i]);
             when(record.getContext()).thenReturn(context);
@@ -94,15 +94,15 @@ class TaskAssignmentTest {
         final String[] keys = { "topic-00001-1741965423183.txt", "topic-00002-1741965423183.txt",
                 "topic-00003-1741965423183.txt", "topic-00004-1741965423183.txt" };
 
-        final OffsetManager<OffsetManagerEntry> offsetManager = new OffsetManager<>(null);
+        final OffsetManager<ExampleOffsetManagerEntry> offsetManager = new OffsetManager<>(null);
         final Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
         final SourceCommonConfig config = configureMockConfig(taskId, maxTasks, DistributionType.PARTITION);
-        final NativeClient nativeClient = mock(NativeClient.class);
-        final SourceRecordIterator iterator = new SourceRecordIterator(config, offsetManager, transformer, 4096,
-                nativeClient);
+        final ExampleNativeClient nativeClient = mock(ExampleNativeClient.class);
+        final ExampleSourceRecordIterator iterator = new ExampleSourceRecordIterator(config, offsetManager, transformer,
+                4096, nativeClient);
 
-        final Predicate<Optional<SourceRecord>> pred = iterator.taskAssignment;
-        final SourceRecord record = mock(SourceRecord.class);
+        final Predicate<Optional<ExampleSourceRecord>> pred = iterator.taskAssignment;
+        final ExampleSourceRecord record = mock(ExampleSourceRecord.class);
         for (int i = 0; i < maxTasks; i++) {
             final Context<String> context = new Context<>(keys[i]);
             context.setPartition(i);
@@ -119,16 +119,16 @@ class TaskAssignmentTest {
     void testThatNullKeysAreHandled() {
         final int maxTasks = 4;
 
-        final OffsetManager<OffsetManagerEntry> offsetManager = new OffsetManager<>(null);
+        final OffsetManager<ExampleOffsetManagerEntry> offsetManager = new OffsetManager<>(null);
         final Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-        final NativeClient nativeClient = mock(NativeClient.class);
+        final ExampleNativeClient nativeClient = mock(ExampleNativeClient.class);
 
-        final SourceRecord record = mock(SourceRecord.class);
+        final ExampleSourceRecord record = mock(ExampleSourceRecord.class);
         for (int taskId = 0; taskId < maxTasks; taskId++) {
             final SourceCommonConfig config = configureMockConfig(taskId, maxTasks, DistributionType.OBJECT_HASH);
-            final SourceRecordIterator iterator = new SourceRecordIterator(config, offsetManager, transformer, 4096,
-                    nativeClient);
-            final Predicate<Optional<SourceRecord>> pred = iterator.taskAssignment;
+            final ExampleSourceRecordIterator iterator = new ExampleSourceRecordIterator(config, offsetManager,
+                    transformer, 4096, nativeClient);
+            final Predicate<Optional<ExampleSourceRecord>> pred = iterator.taskAssignment;
             final Context<String> context = new Context<>(null); // NOPMD AvoidInstantiatingObjectsInLoops
             when(record.getContext()).thenReturn(context);
             assertThat(pred.test(Optional.of(record))).isFalse();
@@ -139,15 +139,15 @@ class TaskAssignmentTest {
     void testThatNullObjectsAreHandled() {
         final int maxTasks = 4;
 
-        final OffsetManager<OffsetManagerEntry> offsetManager = new OffsetManager<>(null);
+        final OffsetManager<ExampleOffsetManagerEntry> offsetManager = new OffsetManager<>(null);
         final Transformer transformer = TransformerFactory.getTransformer(InputFormat.BYTES);
-        final NativeClient nativeClient = mock(NativeClient.class);
+        final ExampleNativeClient nativeClient = mock(ExampleNativeClient.class);
 
         for (int taskId = 0; taskId < maxTasks; taskId++) {
             final SourceCommonConfig config = configureMockConfig(taskId, maxTasks, DistributionType.PARTITION);
-            final SourceRecordIterator iterator = new SourceRecordIterator(config, offsetManager, transformer, 4096,
-                    nativeClient);
-            final Predicate<Optional<SourceRecord>> pred = iterator.taskAssignment;
+            final ExampleSourceRecordIterator iterator = new ExampleSourceRecordIterator(config, offsetManager,
+                    transformer, 4096, nativeClient);
+            final Predicate<Optional<ExampleSourceRecord>> pred = iterator.taskAssignment;
             assertThat(pred.test(Optional.empty())).isFalse();
         }
     }

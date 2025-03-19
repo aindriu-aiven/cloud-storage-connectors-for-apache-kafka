@@ -18,6 +18,8 @@ package io.aiven.kafka.connect.common.source;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,12 +28,16 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import org.apache.kafka.connect.source.SourceTaskContext;
+import org.apache.kafka.connect.storage.OffsetStorageReader;
 
 import io.aiven.kafka.connect.common.config.SourceCommonConfig;
 import io.aiven.kafka.connect.common.source.input.AvroTestDataFixture;
@@ -64,7 +70,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K>, O extends OffsetManager.OffsetManagerEntry<O>, T extends AbstractSourceRecord<N, K, O, T>> {
     /** The offset manager */
-    private OffsetManager<O> mockOffsetManager;
+    private OffsetManager<O> offsetManager;
     /** The key based on the file name */
     private K key;
     /** The file name for testing */
@@ -90,15 +96,14 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
      *
      * @param mockConfig
      *            A mock configuration returned by {@link #createMockedConfig()} with additional values added.
-     * @param mockOffsetManager
+     * @param offsetManager
      *            A mock offset manager.
      * @param transformer
      *            The trnasformer to use for the test.
      * @return A configured AbstractSourceRecordIterator.
      */
     abstract protected AbstractSourceRecordIterator<N, K, O, T> createSourceRecordIterator(
-            final SourceCommonConfig mockConfig, final OffsetManager<O> mockOffsetManager,
-            final Transformer transformer);
+            final SourceCommonConfig mockConfig, final OffsetManager<O> offsetManager, final Transformer transformer);
 
     /**
      * Create a client mutator that will add testing data to the iterator under test.
@@ -118,7 +123,13 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
     @BeforeEach
     public void setUp() {
-        mockOffsetManager = mock(OffsetManager.class);
+        SourceTaskContext sourceTaskContext = mock(SourceTaskContext.class);
+        OffsetStorageReader offsetStorageReader = mock(OffsetStorageReader.class);
+        when(offsetStorageReader.offset(anyMap())).thenReturn(Collections.emptyMap());
+        when(offsetStorageReader.offsets(anyCollection())).thenReturn(Collections.emptyMap());
+        when(sourceTaskContext.offsetStorageReader()).thenReturn(offsetStorageReader);
+
+        offsetManager = new OffsetManager<>(sourceTaskContext);
         key = createKFrom(FILE_NAME);
     }
 
@@ -157,7 +168,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
         // verify empty is empty.
         createClientMutator().build();
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, offsetManager,
                 transformer);
         assertThat(iterator).isExhausted();
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
@@ -172,7 +183,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
         // verify one data has one data
         createClientMutator().reset().addObject(key, ByteBuffer.wrap(data)).endOfBlock().build();
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, offsetManager,
                 transformer);
         assertThat(iterator).hasNext();
         assertThat(iterator.next()).isNotNull();
@@ -188,7 +199,7 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
 
         // verify empty is empty.
         createClientMutator().build();
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, mockOffsetManager,
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(mockConfig, offsetManager,
                 transformer);
         assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
     }
@@ -234,18 +245,18 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         final SourceCommonConfig config = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(config.getTransformerMaxBufferSize()).thenReturn(4096);
         when(config.getInputFormat()).thenReturn(format);
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager,
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, offsetManager,
                 transformer);
 
         // check first entry
         assertThat(iterator.hasNext()).isTrue();
         T t = iterator.next();
-        assertThat(t.getRecordCount()).isEqualTo(0);
+        assertThat(t.getRecordCount()).isEqualTo(1);
 
         // check 2nd entry
         assertThat(iterator.hasNext()).isTrue();
         t = iterator.next();
-        assertThat(t.getRecordCount()).isEqualTo(0);
+        assertThat(t.getRecordCount()).isEqualTo(2);
 
         // check complete
         assertThat(iterator).isExhausted();
@@ -307,22 +318,23 @@ public abstract class AbstractSourceRecordIteratorTest<N, K extends Comparable<K
         final SourceCommonConfig config = mockSourceConfig(FILE_PATTERN, 0, 1, null);
         when(config.getTransformerMaxBufferSize()).thenReturn(4096);
         when(config.getInputFormat()).thenReturn(InputFormat.BYTES);
-        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, mockOffsetManager,
+        AbstractSourceRecordIterator<N, K, O, T> iterator = createSourceRecordIterator(config, offsetManager,
                 transformer);
 
         // check first entry
         assertThat(iterator.hasNext()).isTrue();
         T t = iterator.next();
-        assertThat(t.getRecordCount()).isEqualTo(0);
+        assertThat(t.getRecordCount()).isEqualTo(1);
         byte[] value = (byte[]) t.getValue().value();
-        assertThat(value).isEqualTo(Arrays.copyOf(testData, 4096));
+        assertThat(value).as("Initial block match the first 4096 bytes").isEqualTo(Arrays.copyOf(testData, 4096));
 
         // check 2nd entry
         assertThat(iterator.hasNext()).isTrue();
         t = iterator.next();
-        assertThat(t.getRecordCount()).isEqualTo(0);
+        assertThat(t.getRecordCount()).isEqualTo(2);
         value = (byte[]) t.getValue().value();
-        assertThat(value).isEqualTo(Arrays.copyOfRange(testData, 4096, 6000));
+        assertThat(value).as("Second block should match the remaining bytes")
+                .isEqualTo(Arrays.copyOfRange(testData, 4096, 6000));
 
         // check complete
         assertThat(iterator).isExhausted();

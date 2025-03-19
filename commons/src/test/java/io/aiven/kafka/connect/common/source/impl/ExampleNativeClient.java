@@ -22,13 +22,13 @@ import java.util.List;
 /**
  * A "native" client. This client returns lists of native objects and ByteBuffers for specific native keys.
  */
-public interface NativeClient {
+public interface ExampleNativeClient {
     /**
      * Gets a list of native objects.
      *
      * @return the list of native objects.
      */
-    List<NativeObject> listObjects();
+    List<ExampleNativeObject> listObjects();
 
     /**
      * Gets the ByteBuffer for a key.

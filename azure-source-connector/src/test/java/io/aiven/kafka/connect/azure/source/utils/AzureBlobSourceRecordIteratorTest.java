@@ -34,10 +34,10 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobItemProperties;
 import reactor.core.publisher.Flux;
 
-final public class AzureSourceRecordIteratorTest
+final public class AzureBlobSourceRecordIteratorTest
         extends
-            AbstractSourceRecordIteratorTest<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> { // NOPMD
-                                                                                                             // TestClassWithoutTestCases
+            AbstractSourceRecordIteratorTest<BlobItem, String, AzureBlobOffsetManagerEntry, AzureBlobSourceRecord> { // NOPMD
+    // TestClassWithoutTestCases
 
     private AzureBlobClient azureBlobClient;
 
@@ -47,10 +47,10 @@ final public class AzureSourceRecordIteratorTest
     }
 
     @Override
-    protected AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> createSourceRecordIterator(
-            final SourceCommonConfig mockConfig, final OffsetManager<AzureOffsetManagerEntry> mockOffsetManager,
+    protected AbstractSourceRecordIterator<BlobItem, String, AzureBlobOffsetManagerEntry, AzureBlobSourceRecord> createSourceRecordIterator(
+            final SourceCommonConfig mockConfig, final OffsetManager<AzureBlobOffsetManagerEntry> offsetManager,
             final Transformer transformer) {
-        return new AzureSourceRecordIterator((AzureBlobSourceConfig) mockConfig, mockOffsetManager, transformer,
+        return new AzureBlobSourceRecordIterator((AzureBlobSourceConfig) mockConfig, offsetManager, transformer,
                 azureBlobClient);
     }
 

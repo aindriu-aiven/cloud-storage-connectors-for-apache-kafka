@@ -44,8 +44,13 @@ public class S3SourceRecord extends AbstractSourceRecord<S3Object, String, S3Off
         });
     }
 
+    private S3SourceRecord(final S3SourceRecord azureBlobSourceRecord) {
+        super(azureBlobSourceRecord);
+    }
+
     @Override
     public S3SourceRecord duplicate() {
-        return new S3SourceRecord(getNativeItem());
+        return new S3SourceRecord(this);
     }
+
 }

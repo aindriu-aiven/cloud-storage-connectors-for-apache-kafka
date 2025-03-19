@@ -24,8 +24,10 @@ import org.slf4j.LoggerFactory;
 /**
  * An AbstractSourceRecord implementation for the NativeObject.
  */
-final public class SourceRecord extends AbstractSourceRecord<NativeObject, String, OffsetManagerEntry, SourceRecord> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceRecord.class);
+final public class ExampleSourceRecord
+        extends
+            AbstractSourceRecord<ExampleNativeObject, String, ExampleOffsetManagerEntry, ExampleSourceRecord> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExampleSourceRecord.class);
 
     /**
      * Constructor.
@@ -33,10 +35,10 @@ final public class SourceRecord extends AbstractSourceRecord<NativeObject, Strin
      * @param nativeObject
      *            The native object
      */
-    public SourceRecord(final NativeObject nativeObject) {
-        super(LOGGER, new NativeInfo<NativeObject, String>() {
+    public ExampleSourceRecord(final ExampleNativeObject nativeObject) {
+        super(LOGGER, new NativeInfo<ExampleNativeObject, String>() {
             @Override
-            public NativeObject getNativeItem() {
+            public ExampleNativeObject getNativeItem() {
                 return nativeObject;
             }
 
@@ -58,12 +60,12 @@ final public class SourceRecord extends AbstractSourceRecord<NativeObject, Strin
      * @param source
      *            the source record to copy.
      */
-    public SourceRecord(final SourceRecord source) {
+    public ExampleSourceRecord(final ExampleSourceRecord source) {
         super(source);
     }
 
     @Override
-    public SourceRecord duplicate() {
-        return new SourceRecord(this);
+    public ExampleSourceRecord duplicate() {
+        return new ExampleSourceRecord(this);
     }
 }

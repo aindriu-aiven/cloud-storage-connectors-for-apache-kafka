@@ -21,10 +21,10 @@ import io.aiven.kafka.connect.common.source.AbstractSourceRecordTest;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobItemProperties;
 
-final class AzureSourceRecordTest
+final class AzureBlobSourceRecordTest
         extends
-            AbstractSourceRecordTest<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> { // NOPMD
-                                                                                                     // TestClassWithoutTestCases
+            AbstractSourceRecordTest<BlobItem, String, AzureBlobOffsetManagerEntry, AzureBlobSourceRecord> { // NOPMD
+    // TestClassWithoutTestCases
     public static final String TEST_BLOB_NAME_TXT = "topic-00001-1741965423180.txt";
     public static final String CONTAINER = "container1";
 
@@ -34,17 +34,17 @@ final class AzureSourceRecordTest
     }
 
     @Override
-    protected AzureOffsetManagerEntry createOffsetManagerEntry(final String key) {
-        return new AzureOffsetManagerEntry(CONTAINER, key);
+    protected AzureBlobOffsetManagerEntry createOffsetManagerEntry(final String key) {
+        return new AzureBlobOffsetManagerEntry(CONTAINER, key);
     }
 
     @Override
-    protected AzureSourceRecord createSourceRecord() {
+    protected AzureBlobSourceRecord createSourceRecord() {
         final BlobItem blobItem = new BlobItem();
         blobItem.setName(TEST_BLOB_NAME_TXT);
         final BlobItemProperties blobItemProperties = new BlobItemProperties();
         blobItemProperties.setContentLength(5L);
         blobItem.setProperties(blobItemProperties);
-        return new AzureSourceRecord(blobItem);
+        return new AzureBlobSourceRecord(blobItem);
     }
 }

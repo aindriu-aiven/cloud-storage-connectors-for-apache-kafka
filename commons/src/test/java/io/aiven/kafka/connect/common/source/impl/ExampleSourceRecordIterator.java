@@ -32,16 +32,16 @@ import org.slf4j.LoggerFactory;
 /**
  * An AbstractSourceRecordIterator implementation for the AbstractSourceRecord implementation.
  */
-final public class SourceRecordIterator
+final public class ExampleSourceRecordIterator
         extends
-            AbstractSourceRecordIterator<NativeObject, String, OffsetManagerEntry, SourceRecord> {
-    private final Logger log = LoggerFactory.getLogger(SourceRecordIterator.class);
+            AbstractSourceRecordIterator<ExampleNativeObject, String, ExampleOffsetManagerEntry, ExampleSourceRecord> {
+    private final Logger log = LoggerFactory.getLogger(ExampleSourceRecordIterator.class);
 
-    private final NativeClient nativeClient;
+    private final ExampleNativeClient nativeClient;
 
-    public SourceRecordIterator(final SourceCommonConfig sourceConfig,
-            final OffsetManager<OffsetManagerEntry> offsetManager, final Transformer transformer, final int bufferSize,
-            final NativeClient nativeClient) {
+    public ExampleSourceRecordIterator(final SourceCommonConfig sourceConfig,
+            final OffsetManager<ExampleOffsetManagerEntry> offsetManager, final Transformer transformer,
+            final int bufferSize, final ExampleNativeClient nativeClient) {
         super(sourceConfig, offsetManager, transformer, bufferSize);
         this.nativeClient = nativeClient;
     }
@@ -52,32 +52,32 @@ final public class SourceRecordIterator
     }
 
     @Override
-    protected Stream<NativeObject> getNativeItemStream(final String offset) {
+    protected Stream<ExampleNativeObject> getNativeItemStream(final String offset) {
         return nativeClient.listObjects().stream();
     }
 
     @Override
-    protected IOSupplier<InputStream> getInputStream(final SourceRecord sourceRecord) {
+    protected IOSupplier<InputStream> getInputStream(final ExampleSourceRecord sourceRecord) {
         return () -> new ByteArrayInputStream(sourceRecord.getNativeItem().data.array());
     }
 
     @Override
-    protected String getNativeKey(final NativeObject nativeObject) {
+    protected String getNativeKey(final ExampleNativeObject nativeObject) {
         return nativeObject.key;
     }
 
     @Override
-    protected SourceRecord createSourceRecord(final NativeObject nativeObject) {
-        return new SourceRecord(nativeObject);
+    protected ExampleSourceRecord createSourceRecord(final ExampleNativeObject nativeObject) {
+        return new ExampleSourceRecord(nativeObject);
     }
 
     @Override
-    protected OffsetManagerEntry createOffsetManagerEntry(final NativeObject nativeObject) {
-        return new OffsetManagerEntry(nativeObject.key, "two", "three");
+    protected ExampleOffsetManagerEntry createOffsetManagerEntry(final ExampleNativeObject nativeObject) {
+        return new ExampleOffsetManagerEntry(nativeObject.key, "three");
     }
 
     @Override
-    protected OffsetManager.OffsetManagerKey getOffsetManagerKey() {
-        return new OffsetManagerEntry(getLastSeenNativeKey(), "two", "three").getManagerKey();
+    protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final String nativeKey) {
+        return new ExampleOffsetManagerEntry(nativeKey, "three").getManagerKey();
     }
 }

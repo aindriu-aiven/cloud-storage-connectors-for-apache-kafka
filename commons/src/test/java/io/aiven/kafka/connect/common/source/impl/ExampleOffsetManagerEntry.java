@@ -26,36 +26,35 @@ import com.google.common.base.Objects;
 /**
  * An implementation of OffsetManagerEntry. This entry has 3 values stored in the map.
  */
-public class OffsetManagerEntry implements OffsetManager.OffsetManagerEntry<OffsetManagerEntry> {
+public class ExampleOffsetManagerEntry implements OffsetManager.OffsetManagerEntry<ExampleOffsetManagerEntry> {
     public Map<String, Object> data;
 
     private int recordCount;
 
+    private static final String KEY = "key";
+    private static final String GROUPING_KEY = "groupingKey";
+    private static final String RECORD_COUNT = "recordCount";
+
     /**
      * Constructor.
      *
-     * @param one
-     *            the first value.
-     * @param two
-     *            the second value.
-     * @param three
-     *            the third value.
+     * @param nativeKey
+     *            The native Key.
+     *
+     * @param grouping
+     *            An grouping division
      */
-    public OffsetManagerEntry(final String one, final String two, final String three) {
+    public ExampleOffsetManagerEntry(final String nativeKey, final String grouping) {
         this();
-        data.put("segment1", one);
-        data.put("segment2", two);
-        data.put("segment3", three);
+        data.put(KEY, nativeKey);
+        data.put(GROUPING_KEY, grouping);
     }
 
     /**
      * Constructor.
      */
-    public OffsetManagerEntry() {
+    private ExampleOffsetManagerEntry() {
         data = new HashMap<>();
-        data.put("segment1", "The First Segment");
-        data.put("segment2", "The Second Segment");
-        data.put("segment3", "The Third Segment");
     }
 
     /**
@@ -64,18 +63,22 @@ public class OffsetManagerEntry implements OffsetManager.OffsetManagerEntry<Offs
      * @param properties
      *            THe data map to use.
      */
-    public OffsetManagerEntry(final Map<String, Object> properties) {
+    public ExampleOffsetManagerEntry(final Map<String, Object> properties) {
         this();
         data.putAll(properties);
+        if (data.containsKey(RECORD_COUNT)) {
+            recordCount = getInt(RECORD_COUNT);
+        }
     }
 
     @Override
-    public OffsetManagerEntry fromProperties(final Map<String, Object> properties) {
-        return new OffsetManagerEntry(properties);
+    public ExampleOffsetManagerEntry fromProperties(final Map<String, Object> properties) {
+        return new ExampleOffsetManagerEntry(properties);
     }
 
     @Override
     public Map<String, Object> getProperties() {
+        data.put(RECORD_COUNT, recordCount);
         return data;
     }
 
@@ -91,8 +94,7 @@ public class OffsetManagerEntry implements OffsetManager.OffsetManagerEntry<Offs
 
     @Override
     public OffsetManager.OffsetManagerKey getManagerKey() {
-        return () -> Map.of("segment1", data.get("segment1"), "segment2", data.get("segment2"), "segment3",
-                data.get("segment3"));
+        return () -> Map.of(KEY, data.get(KEY), GROUPING_KEY, data.get(GROUPING_KEY));
     }
 
     @Override
@@ -107,27 +109,27 @@ public class OffsetManagerEntry implements OffsetManager.OffsetManagerEntry<Offs
 
     @Override
     public boolean equals(final Object other) {
-        if (other instanceof OffsetManagerEntry) {
-            return this.compareTo((OffsetManagerEntry) other) == 0;
+        if (other instanceof ExampleOffsetManagerEntry) {
+            return this.compareTo((ExampleOffsetManagerEntry) other) == 0;
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getProperty("segment1"), getProperty("segment2"), getProperty("segment3"));
+        return Objects.hashCode(getProperty(KEY), getProperty(GROUPING_KEY));
     }
 
     @Override
-    public int compareTo(final OffsetManagerEntry other) {
+    public int compareTo(final ExampleOffsetManagerEntry other) {
         if (other == this) { // NOPMD
             return 0;
         }
-        int result = ((String) getProperty("segment1")).compareTo((String) other.getProperty("segment1"));
+        int result = ((String) getProperty(KEY)).compareTo((String) other.getProperty(KEY));
         if (result == 0) {
-            result = ((String) getProperty("segment2")).compareTo((String) other.getProperty("segment2"));
+            result = ((String) getProperty(GROUPING_KEY)).compareTo((String) other.getProperty(GROUPING_KEY));
             if (result == 0) {
-                result = ((String) getProperty("segment3")).compareTo((String) other.getProperty("segment3"));
+                result = Long.compare(getRecordCount(), other.getRecordCount());
             }
         }
         return result;

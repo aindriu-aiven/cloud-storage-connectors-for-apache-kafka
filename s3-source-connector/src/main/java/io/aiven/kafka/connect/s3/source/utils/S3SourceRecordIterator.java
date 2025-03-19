@@ -24,6 +24,7 @@ import io.aiven.kafka.connect.common.source.OffsetManager;
 import io.aiven.kafka.connect.common.source.input.Transformer;
 import io.aiven.kafka.connect.s3.source.config.S3SourceConfig;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.function.IOSupplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -34,11 +35,11 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * Iterator that processes S3 files and creates Kafka source records. Supports different output formats (Avro, JSON,
  * Parquet).
  */
-public final class SourceRecordIterator
+public final class S3SourceRecordIterator
         extends
             AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceRecordIterator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3SourceRecordIterator.class);
 
     /** The AWS client that provides the S3Objects */
     private final AWSV2SourceClient sourceClient;
@@ -50,8 +51,8 @@ public final class SourceRecordIterator
      * /** The inner iterator to provides a base S3SourceRecord for an S3Object that has passed the filters and
      * potentially had data extracted.
      */
-
-    public SourceRecordIterator(final S3SourceConfig s3SourceConfig,
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "source client has stores mutable fields")
+    public S3SourceRecordIterator(final S3SourceConfig s3SourceConfig,
             final OffsetManager<S3OffsetManagerEntry> offsetManager, final Transformer transformer,
             final AWSV2SourceClient sourceClient) {
 
@@ -91,7 +92,7 @@ public final class SourceRecordIterator
     }
 
     @Override
-    protected OffsetManager.OffsetManagerKey getOffsetManagerKey() {
-        return S3OffsetManagerEntry.asKey(bucket, StringUtils.defaultIfBlank(getLastSeenNativeKey(), ""));
+    protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final String nativeKey) {
+        return S3OffsetManagerEntry.asKey(bucket, StringUtils.defaultIfBlank(nativeKey, ""));
     }
 }

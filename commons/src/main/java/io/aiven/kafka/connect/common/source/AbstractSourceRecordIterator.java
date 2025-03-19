@@ -16,6 +16,8 @@
 
 package io.aiven.kafka.connect.common.source;
 
+import javax.validation.constraints.NotNull;
+
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Iterator;
@@ -176,29 +178,21 @@ public abstract class AbstractSourceRecordIterator<N, K extends Comparable<K>, O
     abstract protected O createOffsetManagerEntry(N nativeObject);
 
     /**
-     * Creates an offset manager key for the last seen native key.
+     * Creates an offset manager key for the native key.
      *
-     * @see #getLastSeenNativeKey()
+     * @param nativeKey
+     *            THe native key to create an offset manager key for.
      * @return An offset manager key.
      */
-    abstract protected OffsetManager.OffsetManagerKey getOffsetManagerKey();
-
-    /**
-     * Returns the last seen native key.
-     *
-     * @return The last seen native key.
-     */
-    final protected K getLastSeenNativeKey() {
-        return lastSeenNativeKey;
-    }
+    abstract protected OffsetManager.OffsetManagerKey getOffsetManagerKey(@NotNull K nativeKey);
 
     @Override
     final public boolean hasNext() {
-        if (!outer.hasNext()) {
+        if (!outer.hasNext() && lastSeenNativeKey != null) {
             // update the buffer to contain this new objectKey
             ringBuffer.enqueue(lastSeenNativeKey);
             // Remove the last seen from the offsetmanager as the file has been completely processed.
-            offsetManager.removeEntry(getOffsetManagerKey());
+            offsetManager.removeEntry(getOffsetManagerKey(lastSeenNativeKey));
         }
         if (!inner.hasNext() && !outer.hasNext()) {
             inner = getNativeItemStream(ringBuffer.getOldest()).map(fileMatching)

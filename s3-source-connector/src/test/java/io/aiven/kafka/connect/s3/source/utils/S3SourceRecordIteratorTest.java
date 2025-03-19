@@ -41,7 +41,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * An implementation of the SourceRecordIteratorTest.
  */
 @SuppressWarnings("PMD.TestClassWithoutTestCases")
-final class SourceRecordIteratorTest
+final class S3SourceRecordIteratorTest
         extends
             AbstractSourceRecordIteratorTest<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> {
 
@@ -56,10 +56,10 @@ final class SourceRecordIteratorTest
 
     @Override
     protected AbstractSourceRecordIterator<S3Object, String, S3OffsetManagerEntry, S3SourceRecord> createSourceRecordIterator(
-            final SourceCommonConfig mockConfig, final OffsetManager<S3OffsetManagerEntry> mockOffsetManager,
+            final SourceCommonConfig mockConfig, final OffsetManager<S3OffsetManagerEntry> offsetManager,
             final Transformer mockTransformer) {
         // create an instance of our concrete iterator.
-        return new SourceRecordIterator((S3SourceConfig) mockConfig, mockOffsetManager, mockTransformer,
+        return new S3SourceRecordIterator((S3SourceConfig) mockConfig, offsetManager, mockTransformer,
                 new AWSV2SourceClient(s3Client, (S3SourceConfig) mockConfig));
     }
 

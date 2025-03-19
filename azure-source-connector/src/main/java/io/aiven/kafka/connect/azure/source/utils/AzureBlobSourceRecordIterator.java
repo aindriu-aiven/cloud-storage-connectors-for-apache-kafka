@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
  * Iterator that processes Azure Blob files and creates Kafka source records. Supports different output formats (Avro,
  * JSON, Parquet).
  */
-public final class AzureSourceRecordIterator
+public final class AzureBlobSourceRecordIterator
         extends
-            AbstractSourceRecordIterator<BlobItem, String, AzureOffsetManagerEntry, AzureSourceRecord> {
+            AbstractSourceRecordIterator<BlobItem, String, AzureBlobOffsetManagerEntry, AzureBlobSourceRecord> {
 
     /** The azure blob client that provides the blobItems */
     private final AzureBlobClient azureBlobClient;
@@ -46,10 +46,10 @@ public final class AzureSourceRecordIterator
     /** The Azure container we are processing */
     private final String container;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AzureSourceRecordIterator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AzureBlobSourceRecordIterator.class);
 
-    public AzureSourceRecordIterator(final AzureBlobSourceConfig azureBlobSourceConfig,
-            final OffsetManager<AzureOffsetManagerEntry> offsetManager, final Transformer transformer,
+    public AzureBlobSourceRecordIterator(final AzureBlobSourceConfig azureBlobSourceConfig,
+            final OffsetManager<AzureBlobOffsetManagerEntry> offsetManager, final Transformer transformer,
             final AzureBlobClient azureBlobClient) {
         super(azureBlobSourceConfig, offsetManager, transformer, 0);
         this.azureBlobClient = azureBlobClient;
@@ -67,7 +67,7 @@ public final class AzureSourceRecordIterator
     }
 
     @Override
-    protected IOSupplier<InputStream> getInputStream(final AzureSourceRecord sourceRecord) {
+    protected IOSupplier<InputStream> getInputStream(final AzureBlobSourceRecord sourceRecord) {
         return () -> new ByteBufferInputStream(azureBlobClient.getBlob(sourceRecord.getNativeKey()).blockFirst());
     }
 
@@ -77,17 +77,17 @@ public final class AzureSourceRecordIterator
     }
 
     @Override
-    protected AzureSourceRecord createSourceRecord(final BlobItem nativeObject) {
-        return new AzureSourceRecord(nativeObject);
+    protected AzureBlobSourceRecord createSourceRecord(final BlobItem nativeObject) {
+        return new AzureBlobSourceRecord(nativeObject);
     }
 
     @Override
-    protected AzureOffsetManagerEntry createOffsetManagerEntry(final BlobItem nativeObject) {
-        return new AzureOffsetManagerEntry(container, getNativeKey(nativeObject));
+    protected AzureBlobOffsetManagerEntry createOffsetManagerEntry(final BlobItem nativeObject) {
+        return new AzureBlobOffsetManagerEntry(container, getNativeKey(nativeObject));
     }
 
     @Override
-    protected OffsetManager.OffsetManagerKey getOffsetManagerKey() {
-        return AzureOffsetManagerEntry.asKey(container, StringUtils.defaultIfBlank(getLastSeenNativeKey(), ""));
+    protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final String nativeKey) {
+        return AzureBlobOffsetManagerEntry.asKey(container, StringUtils.defaultIfBlank(nativeKey, ""));
     }
 }

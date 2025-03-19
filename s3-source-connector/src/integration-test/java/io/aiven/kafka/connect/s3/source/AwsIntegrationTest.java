@@ -57,7 +57,7 @@ import io.aiven.kafka.connect.s3.source.testutils.BucketAccessor;
 import io.aiven.kafka.connect.s3.source.utils.AWSV2SourceClient;
 import io.aiven.kafka.connect.s3.source.utils.S3OffsetManagerEntry;
 import io.aiven.kafka.connect.s3.source.utils.S3SourceRecord;
-import io.aiven.kafka.connect.s3.source.utils.SourceRecordIterator;
+import io.aiven.kafka.connect.s3.source.utils.S3SourceRecordIterator;
 
 import org.apache.avro.Schema;
 import org.jetbrains.annotations.NotNull;
@@ -175,7 +175,7 @@ class AwsIntegrationTest implements IntegrationBase {
 
         final AWSV2SourceClient sourceClient = new AWSV2SourceClient(s3SourceConfig);
 
-        final Iterator<S3SourceRecord> sourceRecordIterator = new SourceRecordIterator(s3SourceConfig, offsetManager,
+        final Iterator<S3SourceRecord> sourceRecordIterator = new S3SourceRecordIterator(s3SourceConfig, offsetManager,
                 TransformerFactory.getTransformer(InputFormat.BYTES), sourceClient);
 
         final HashSet<String> seenKeys = new HashSet<>();
@@ -243,7 +243,7 @@ class AwsIntegrationTest implements IntegrationBase {
 
         final AWSV2SourceClient sourceClient = new AWSV2SourceClient(s3SourceConfig);
 
-        final Iterator<S3SourceRecord> sourceRecordIterator = new SourceRecordIterator(s3SourceConfig, offsetManager,
+        final Iterator<S3SourceRecord> sourceRecordIterator = new S3SourceRecordIterator(s3SourceConfig, offsetManager,
                 TransformerFactory.getTransformer(InputFormat.AVRO), sourceClient);
 
         final HashSet<String> seenKeys = new HashSet<>();
@@ -296,7 +296,7 @@ class AwsIntegrationTest implements IntegrationBase {
 
         final S3SourceConfig s3SourceConfig = new S3SourceConfig(configData);
         final AWSV2SourceClient sourceClient = new AWSV2SourceClient(s3SourceConfig);
-        final Iterator<S3SourceRecord> iterator = new SourceRecordIterator(s3SourceConfig, createOffsetManager(),
+        final Iterator<S3SourceRecord> iterator = new S3SourceRecordIterator(s3SourceConfig, createOffsetManager(),
                 TransformerFactory.getTransformer(InputFormat.BYTES), sourceClient);
 
         assertThat(iterator).hasNext();
